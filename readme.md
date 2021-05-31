@@ -8,10 +8,11 @@ First, fork the repository.
 
 Second, if you use `Windows` or `Linux` just run `idk.cmd` file. 
 If somthing another, then try:
-    cmake ..
-    make
-    ./bin/idk
-
+```
+cmake ..
+make
+./bin/idk
+```
 
 Documentation
 ----------
