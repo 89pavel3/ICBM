@@ -16,8 +16,8 @@ make
 
 Documentation
 ----------
-Game Docs - nothing yet
-RayLib - https://github.com/RobLoach/raylib-cpp - https://www.raylib.com/index.html
+Game Docs - nothing yet.
+raylib: [raylib-cpp](https://github.com/RobLoach/raylib-cpp) - [raylib official site](https://www.raylib.com/index.html).
 
 License
 ----------
