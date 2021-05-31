@@ -1,18 +1,25 @@
 ICBM
 ===========
-
 Simple 2D RayLib-based game.
+
+Getting Started
+----------
+First, fork the repository.
+
+Second, if you use `Windows` or `Linux` just run `idk.cmd` file. 
+If somthing another, then try:
+    cmake ..
+    make
+    ./bin/idk
+
 
 Documentation
 ----------
-
 Game Docs - nothing yet
 RayLib - https://github.com/RobLoach/raylib-cpp - https://www.raylib.com/index.html
 
-
 License
 ----------
-
 MIT License
 
 Copyright (c) 2021 89pavel3
