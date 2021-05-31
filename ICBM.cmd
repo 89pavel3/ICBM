@@ -2,7 +2,7 @@ goto(){
 conan install conanfile.txt
 cmake ..
 make
-./bin/idk
+./bin/ICBM
 uname -o
 }
 
