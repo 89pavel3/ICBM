@@ -4,7 +4,7 @@ Simple 2D RayLib-based game.
 
 Getting Started
 ----------
-First, install 'cmake' and 'conan'.
+First, install `cmake` and `conan`.
 
 Second, clone the repository.
 
