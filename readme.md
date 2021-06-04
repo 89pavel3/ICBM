@@ -4,15 +4,11 @@ Simple 2D RayLib-based game.
 
 Getting Started
 ----------
-First, fork the repository.
+First, install 'cmake' and 'conan'.
 
-Second, if you use `Windows` or `Linux` just run `idk.cmd` file. 
-If somthing another, then try:
-```
-cmake ..
-make
-./bin/idk
-```
+Second, clone the repository.
+
+Third, if you use `Windows`(doesn't work right now) or `Linux` just run `idk.cmd` file. 
 
 Documentation
 ----------
