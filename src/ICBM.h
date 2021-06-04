@@ -35,6 +35,15 @@
 //------------------------------------------------------------------------------------------
 // Types and Structures Definition
 //------------------------------------------------------------------------------------------
+typedef struct Particle {
+    Vector2 origin;
+    Vector2 position;
+    Vector2 objective;
+    Vector2 speed;
+
+    bool explosive;
+    bool active;
+}   Particle;
 
 typedef struct Missile {
     Vector2 origin;
@@ -42,6 +51,7 @@ typedef struct Missile {
     Vector2 objective;
     Vector2 speed;
 
+    bool explosive = 1;
     bool active;
 } Missile;
 
@@ -53,17 +63,19 @@ typedef struct Interceptor {
 
     int cooldown = 60;
 
+    bool explosive = 1;
     bool active;
 } Interceptor;
 
 typedef struct Swarm {
     Vector2 origin;
+    Vector2 objective;
     Vector2 speed;
-
-    float objectiveHeight;           // objective height, where all missiles'll explode
+    
     int cooldown = 600;
-    int quantity = 20;      // number of outgoing missiles
 
+    bool friendly = 1;    
+    bool explosive = 1;
     bool active;
 } Swarm;
 
@@ -75,6 +87,7 @@ typedef struct Laser {
     int duration;
     int frame;
 
+    bool explosive = 0;
     bool active;
 } Laser;
 
@@ -86,6 +99,8 @@ typedef struct Airburst {
 
     int cooldown = 60;
     int numberOfShrapnel = 10;
+
+    bool explosive = 0;
     bool active;
 } Airburst;
 
@@ -97,6 +112,7 @@ typedef struct Shrapnel {
 
     int cooldown = 60;
 
+    bool explosive = 0;
     bool active;
 } Shrapnel;
 
@@ -159,10 +175,10 @@ static Building building[BUILDINGS_AMOUNT] = { 0 };
 static int explosionIndex = 0;
 
 static std::string fireModes [4] {
-    "INTERCEPTOR",                      // single missile
-    "SWARM",                // cascade of missiles
-    "LASERGUN",                         // lasergun
-    "AIRBURST"             // anti-aircraft explosive projectile
+    "INTERCEPTOR",                  // single missile
+    "SWARM",                        // cascade of missiles
+    "LASERGUN",                     // lasergun
+    "AIRBURST"                      // anti-aircraft explosive projectile
 }; 
 
 //-----------------------------S-------------------------------------------------------------
@@ -171,20 +187,16 @@ static std::string fireModes [4] {
 
 Textures bg;
 Textures bgBottom;
-
 Textures grass;
 Textures turretTop [2];
 Textures turretBottom [2];
 
-
 Texture2D Tbg;
 Texture2D TbgBottom;
-
 Texture2D Tgrass;
 Texture2D Tbuilding;
 Texture2D TturretTop;
 Texture2D TturretBottom;
-
 
 Font font;
 
@@ -199,6 +211,8 @@ static void UnloadGame(void);       // Unload game
 
 
 // Additional module functions
+static bool CheckCollisionParticle(Particle particle);
+
 static void UpdateOutgoingFire();
 static void UpdateIncomingFire();
 

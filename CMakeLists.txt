@@ -1,10 +1,10 @@
-project(ICBM)
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.10.0)
+project(ICBM CXX)
 
 include(${CMAKE_SOURCE_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 
 add_subdirectory(src)
-# target_include_directories(ICBM PUBLIC ${TEXTURES})
+target_include_directories(ICBM PUBLIC resources)
 
 

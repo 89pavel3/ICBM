@@ -5,8 +5,6 @@
 //------------------------------------------------------------------------------------------
 int main(void)
 {   
-    printf("echo $PWD\n");
-    system("pwd");
     // Initialization
     //--------------------------------------------------------------------------------------
     InitWindow(screenWidth, screenHeight, "ICBM");
@@ -155,92 +153,10 @@ void UpdateGame(void)
                     missile[i].position.x += missile[i].speed.x;
                     missile[i].position.y += missile[i].speed.y;
                     
-                    // Collision and missile out of bounds
-                    if (missile[i].position.y > groundPositionScale * screenHeight) {
-                        // Missile dissapears
-                        missile[i].active = false;
-
-                        // Explosion appears
-                        explosion[explosionIndex].position = missile[i].position;
-                        explosion[explosionIndex].active = true;
-                        explosion[explosionIndex].frame = 0;
-                        explosionIndex++;
-                        if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
-                    }
-                    else
-                    {
-                        // CHeck collision with turrets
-                        for (int j = 0; j < TURRETS_AMOUNT; j++)
-                        {
-                            if (turret[j].active)
-                            {
-                                if (CheckCollisionPointRec(missile[i].position,  (Rectangle){ turret[j].position.x - TURRET_WIDTH/2, turret[j].position.y - TURRET_HEIGHT/2,
-                                                                                            TURRET_WIDTH, TURRET_HEIGHT }))
-                                {
-                                    // Missile dissapears
-                                    missile[i].active = false;
-
-                                    // Explosion and destroy building
-                                    turret[j].active = false;
-
-                                    explosion[explosionIndex].position = missile[i].position;
-                                    explosion[explosionIndex].active = true;
-                                    explosion[explosionIndex].frame = 0;
-                                    explosionIndex++;
-                                    if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
-
-                                    break;
-                                }
-                            }
-                        }
-
-                        // CHeck collision with buildings
-                        for (int j = 0; j < BUILDINGS_AMOUNT; j++)
-                        {
-                            if (building[j].active)
-                            {
-                                if (CheckCollisionPointRec(missile[i].position,  (Rectangle){ building[j].position.x - BUILDING_WIDTH/2, building[j].position.y - BUILDING_HEIGHT/2, BUILDING_WIDTH, BUILDING_HEIGHT }))
-                                {
-                                    // Missile dissapears
-                                    missile[i].active = false;
-
-                                    // Explosion and destroy building
-                                    building[j].active = false;
-
-                                    explosion[explosionIndex].position = missile[i].position;
-                                    explosion[explosionIndex].active = true;
-                                    explosion[explosionIndex].frame = 0;
-                                    explosionIndex++;
-                                    if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
-
-                                    break;
-                                }
-                            }
-                        }
-
-                        // CHeck collision with explosions
-                        for (int j = 0; j < MAX_EXPLOSIONS; j++)
-                        {
-                            if (explosion[j].active)
-                            {
-                                if (CheckCollisionPointCircle(missile[i].position, explosion[j].position, EXPLOSION_RADIUS*explosion[j].radiusMultiplier))
-                                {
-                                    // Missile dissapears and we earn 1 points
-                                    missile[i].active = false;
-                                    score += 1;
-
-                                    explosion[explosionIndex].position = missile[i].position;
-                                    explosion[explosionIndex].active = true;
-                                    explosion[explosionIndex].frame = 0;
-                                    explosionIndex++;
-                                    if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
-
-                                    break;
-                                }
-                            }
-                        }
-                    }
+                    missile[i].active = CheckCollisionParticle(Particle {missile[i].origin, missile[i].position, missile[i].objective, missile[i].speed, missile[i].explosive, missile[i].active});
+                    
                 }
+                
             }
 
             // Explosions update
@@ -493,7 +409,7 @@ static void UpdateOutgoingInterceptor()
 
 static void UpdateOutgoingSwarmingMissiles()
 {
-
+    
 }
 
 static void UpdateOutgoingLaserBeam()
@@ -512,7 +428,7 @@ static void UpdateShrapnel()
 }
 
 //------------------------------------------------------------------------------------------
-// Additional modules for texture functions
+// Additional modules
 //------------------------------------------------------------------------------------------
 
 // Flip rectangle horizontaly or verticaly
@@ -528,7 +444,104 @@ void DrawSprite(Texture2D sprite, Textures textures, Vector2 pos, int angle, boo
     DrawTexturePro(sprite, flippedRectangle, Rectangle { textures.center.x, textures.center.y, (float)sprite.width, (float) sprite.height }, Vector2{ (float)sprite.width/2, (float)sprite.height/2}, angle, WHITE);                
 }
 
+// Check collision particle with buildings, turrets and explosions
+bool CheckCollisionParticle(Particle particle){
+    // Collision and particle out of bounds
+    if (particle.position.y > groundPositionScale * screenHeight) {
+        // particle dissapears
+        particle.active = false;
 
+        // Explosion appears
+        if (particle.explosive){
+            explosion[explosionIndex].position = particle.position;
+            explosion[explosionIndex].active = true;
+            explosion[explosionIndex].frame = 0;
+            explosionIndex++;
+            if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
+        }
+    }
+    else
+    {
+        // CHeck collision with turrets
+        for (int j = 0; j < TURRETS_AMOUNT; j++)
+        {
+            if (turret[j].active)
+            {
+                if (CheckCollisionPointRec(particle.position,  (Rectangle){ turret[j].position.x - TURRET_WIDTH/2, turret[j].position.y - TURRET_HEIGHT/2,
+                                                                            TURRET_WIDTH, TURRET_HEIGHT }))
+                {
+                    // particle dissapears
+                    particle.active = false;
+
+                    // Explosion and destroy building
+                    turret[j].active = false;
+
+                    if (particle.explosive)
+                    {   
+                        explosion[explosionIndex].position = particle.position;
+                        explosion[explosionIndex].active = true;
+                        explosion[explosionIndex].frame = 0;
+                        explosionIndex++;
+                        if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        // CHeck collision with buildings
+        for (int j = 0; j < BUILDINGS_AMOUNT; j++)
+        {
+            if (building[j].active)
+            {
+                if (CheckCollisionPointRec(particle.position,  (Rectangle){ building[j].position.x - BUILDING_WIDTH/2, building[j].position.y - BUILDING_HEIGHT/2, BUILDING_WIDTH, BUILDING_HEIGHT }))
+                {
+                    // particle dissapears
+                    particle.active = false;
+
+                    // Explosion and destroy building
+                    building[j].active = false;
+                    if (particle.explosive)
+                    {
+                        explosion[explosionIndex].position = particle.position;
+                        explosion[explosionIndex].active = true;
+                        explosion[explosionIndex].frame = 0;
+                        explosionIndex++;
+                        if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        // CHeck collision with explosions
+        for (int j = 0; j < MAX_EXPLOSIONS; j++)
+        {
+            if (explosion[j].active)
+            {
+                if (CheckCollisionPointCircle(particle.position, explosion[j].position, EXPLOSION_RADIUS*explosion[j].radiusMultiplier))
+                {
+                    // particle dissapears and we earn 1 points
+                    particle.active = false;
+                    score += 1;
+                    if (particle.explosive)
+                    {
+                        explosion[explosionIndex].position = particle.position;
+                        explosion[explosionIndex].active = true;
+                        explosion[explosionIndex].frame = 0;
+                        explosionIndex++;
+                        if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
+    return particle.active;
+}
 
 //------------------------------------------------------------------------------------------
 // Modules that upload and unload all images, textures, music
@@ -537,35 +550,35 @@ void DrawSprite(Texture2D sprite, Textures textures, Vector2 pos, int angle, boo
 // Upload game 
 void UploadGame(void){
     // Upload and set game icon
-    Image icon = LoadImage("icon.png");
+    Image icon = LoadImage("./resources/icon.png");
     SetWindowIcon(icon);
     
     // Upload background
-    Tbg = LoadTexture("./textures/bg.png");
+    Tbg = LoadTexture("./resources/bg.png");
     bg.origin = Vector2 { 0, 0 };
     bg.center = Vector2 { Tbg.width/2 + bg.origin.x, Tbg.height/2 + bg.origin.y };
 
-    TbgBottom = LoadTexture("./textures/bg_bottom.png");
+    TbgBottom = LoadTexture("./resources/bg_bottom.png");
     bgBottom.origin = Vector2 { 0, screenHeight * groundPositionScale };
     bgBottom.center = Vector2 { TbgBottom.width/2 + bgBottom.origin.x, TbgBottom.height/2 + bgBottom.origin.y };
 
     // Upload grass
-    Tgrass = LoadTexture("./textures/grass_blue.png");
+    Tgrass = LoadTexture("./resources/grass_blue.png");
     grass.origin = Vector2 { 0, screenHeight * groundPositionScale - Tgrass.height };
     grass.center = Vector2 { Tgrass.width/2 + grass.origin.x, Tgrass.height/2 + grass.origin.y };
 
     // Upload building textures
-    Tbuilding = LoadTexture("./textures/homes.png");
+    Tbuilding = LoadTexture("./resources/homes.png");
 
     // Upload turret textures
-    TturretTop = LoadTexture("./textures/turretTop.png");
+    TturretTop = LoadTexture("./resources/turretTop.png");
     
     for (int i = 0; i < 2; i++){
         turretTop[i].origin = Vector2 { turret[i].position.x - TturretTop.width/2, turret[i].position.y - TURRET_HEIGHT/2 };
         turretTop[i].center = Vector2 { TturretTop.width/2 + turretTop[i].origin.x, TturretTop.height/2 + turretTop[0].origin.y };
     }
 
-    TturretBottom = LoadTexture("./textures/turretBottom.png");
+    TturretBottom = LoadTexture("./resources/turretBottom.png");
     
     for (int i = 0; i < 2; i++){
         turretBottom[i].origin = Vector2 { turret[i].position.x - TURRET_WIDTH/2, turret[i].position.y + TURRET_HEIGHT/2 - TturretBottom.height };
