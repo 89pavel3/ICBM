@@ -12,7 +12,7 @@ Third, if you use `Windows`(doesn't work right now) or `Linux` just run `ICBM.cm
 
 Documentation
 ----------
-Game Docs - nothing yet.
+Game docs - there is no documentation. Tests too.
 
 raylib: [raylib-cpp](https://github.com/RobLoach/raylib-cpp) - [raylib official site](https://www.raylib.com/index.html).
 
