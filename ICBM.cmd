@@ -10,6 +10,8 @@ goto $@
 exit
 
 :(){
+conan install conanfile.txt
+
 rem Windows script here
 echo %OS%
 exit

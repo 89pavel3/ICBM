@@ -1,0 +1,5 @@
+/home/mandranela/GitHub/ICBM/CMakeFiles/rebuild_cache.dir
+/home/mandranela/GitHub/ICBM/CMakeFiles/edit_cache.dir
+/home/mandranela/GitHub/ICBM/src/CMakeFiles/rebuild_cache.dir
+/home/mandranela/GitHub/ICBM/src/CMakeFiles/edit_cache.dir
+/home/mandranela/GitHub/ICBM/src/CMakeFiles/ICBM.dir
