@@ -550,35 +550,35 @@ bool CheckCollisionParticle(Particle particle){
 // Upload game 
 void UploadGame(void){
     // Upload and set game icon
-    Image icon = LoadImage("./resources/icon.png");
+    Image icon = LoadImage("../resources/icon.png");
     SetWindowIcon(icon);
     
     // Upload background
-    Tbg = LoadTexture("./resources/bg.png");
+    Tbg = LoadTexture("../resources/bg.png");
     bg.origin = Vector2 { 0, 0 };
     bg.center = Vector2 { Tbg.width/2 + bg.origin.x, Tbg.height/2 + bg.origin.y };
 
-    TbgBottom = LoadTexture("./resources/bg_bottom.png");
+    TbgBottom = LoadTexture("../resources/bg_bottom.png");
     bgBottom.origin = Vector2 { 0, screenHeight * groundPositionScale };
     bgBottom.center = Vector2 { TbgBottom.width/2 + bgBottom.origin.x, TbgBottom.height/2 + bgBottom.origin.y };
 
     // Upload grass
-    Tgrass = LoadTexture("./resources/grass_blue.png");
+    Tgrass = LoadTexture("../resources/grass_blue.png");
     grass.origin = Vector2 { 0, screenHeight * groundPositionScale - Tgrass.height };
     grass.center = Vector2 { Tgrass.width/2 + grass.origin.x, Tgrass.height/2 + grass.origin.y };
 
     // Upload building textures
-    Tbuilding = LoadTexture("./resources/homes.png");
+    Tbuilding = LoadTexture("../resources/homes.png");
 
     // Upload turret textures
-    TturretTop = LoadTexture("./resources/turretTop.png");
+    TturretTop = LoadTexture("../resources/turretTop.png");
     
     for (int i = 0; i < 2; i++){
         turretTop[i].origin = Vector2 { turret[i].position.x - TturretTop.width/2, turret[i].position.y - TURRET_HEIGHT/2 };
         turretTop[i].center = Vector2 { TturretTop.width/2 + turretTop[i].origin.x, TturretTop.height/2 + turretTop[0].origin.y };
     }
 
-    TturretBottom = LoadTexture("./resources/turretBottom.png");
+    TturretBottom = LoadTexture("../resources/turretBottom.png");
     
     for (int i = 0; i < 2; i++){
         turretBottom[i].origin = Vector2 { turret[i].position.x - TURRET_WIDTH/2, turret[i].position.y + TURRET_HEIGHT/2 - TturretBottom.height };

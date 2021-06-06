@@ -1,16 +1,16 @@
 goto(){
-conan install conanfile.txt
-cmake .
-make
-./bin/ICBM
-uname -o
+    mkdir build
+    cd build
+    conan install ..
+    cmake ..
+    make
+    ./bin/ICBM
 }
 
 goto $@
 exit
 
 :(){
-conan install conanfile.txt
 
 rem Windows script here
 echo %OS%
