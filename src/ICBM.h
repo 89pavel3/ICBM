@@ -26,16 +26,26 @@
 
 #define MISSILE_SPEED               1
 #define MISSILE_LAUNCH_FRAMES       80
+
 #define INTERCEPTOR_SPEED           10
+
 #define EXPLOSION_INCREASE_TIME     90          // In frames
 #define EXPLOSION_TOTAL_TIME        210         // In frames
 
 #define EXPLOSION_COLOR             (Color){ 200, 50, 50, 125 }
 
+#define INTERCEPTOR_COOLDOWN        60
+#define SWARM_COOLDOWN              300
+#define LASERGUN_COOLDOWN           120
+#define AIRBURST_COOLDOWN           120
+
+#define SWARM_DURATION              60
+
 //------------------------------------------------------------------------------------------
 // Types and Structures Definition
 //------------------------------------------------------------------------------------------
-typedef struct Particle {
+class Particle {
+public:
     Vector2 origin;
     Vector2 position;
     Vector2 objective;
@@ -43,47 +53,44 @@ typedef struct Particle {
 
     bool explosive;
     bool active;
-}   Particle;
-
-typedef struct Missile {
-    Vector2 origin;
-    Vector2 position;
-    Vector2 objective;
-    Vector2 speed;
-
-    bool explosive = 1;
-    bool active;
-} Missile;
-
-typedef struct Interceptor {
-    Vector2 origin;
-    Vector2 position;
-    Vector2 objective;
-    Vector2 speed;
-
-    int cooldown = 60;
-
-    bool explosive = 1;
-    bool active;
-} Interceptor;
-
-typedef struct Swarm {
-    Vector2 origin;
-    Vector2 objective;
-    Vector2 speed;
     
-    int cooldown = 600;
+    Particle(Vector2 originP = Vector2 {0, 0}, Vector2 positionP = Vector2 {0, 0}, Vector2 objectiveP = Vector2 {0, 0}, Vector2 speedP = Vector2 {0, 0}, bool explosiveP = 0, bool activeP =0)
+    {
+        this->origin = originP;
+        this->position = positionP;
+        this->objective = objectiveP;
+        this->speed = speedP;
 
-    bool friendly = 1;    
-    bool explosive = 1;
-    bool active;
-} Swarm;
+        this->explosive = explosiveP;
+        this->active = activeP;
+    };
+
+    ~Particle(){}
+};
+
+class Missile : public Particle {
+public:
+    Missile()
+    : Particle()
+    {
+       explosive = 1;
+    };
+};
+
+class Interceptor : public Particle {
+public:
+    Interceptor()
+    : Particle()
+    {
+       explosive = 1;
+    };
+};
+
 
 typedef struct Laser {
     Vector2 origin;
     Vector2 objective;
 
-    int cooldown = 300;
     int duration;
     int frame;
 
@@ -97,25 +104,19 @@ typedef struct Airburst {
     Vector2 objective;
     Vector2 speed;
 
-    int cooldown = 60;
     int numberOfShrapnel = 10;
 
     bool explosive = 0;
     bool active;
 } Airburst;
 
-typedef struct Shrapnel {
-    Vector2 origin;
-    Vector2 position;
-    Vector2 objective;
-    Vector2 speed;
-
-    int cooldown = 60;
-
-    bool explosive = 0;
-    bool active;
-} Shrapnel;
-
+class Shrapnel : public Particle {
+public:
+    Shrapnel()
+    : Particle()
+    {  
+    };
+};
 
 
 typedef struct Explosion {
@@ -136,7 +137,7 @@ typedef struct Building {
     bool active;
 } Building;
 
-typedef enum FireModes 
+enum FireModes 
 {
     INTERCEPTOR,                // single missile
     SWARMING_MISSILES,          // cascade of missiles
@@ -149,7 +150,6 @@ typedef struct Textures{
     Vector2 origin;
     int angle;
 } Textures;
-
 
 //------------------------------------------------------------------------------------------
 // Global Variables Declaration
@@ -167,11 +167,11 @@ static bool pause = false;
 static int score = 0;
 static int fireMode;
 
-static Missile missile[MAX_MISSILES] = { 0 };
-static Interceptor interceptor[MAX_INTERCEPTORS] = { 0 };
-static Explosion explosion[MAX_EXPLOSIONS] = { 0 };
-static Turret turret[TURRETS_AMOUNT] = { 0 };
-static Building building[BUILDINGS_AMOUNT] = { 0 };
+static Missile missile[MAX_MISSILES];
+static Interceptor interceptor[MAX_INTERCEPTORS];
+static Explosion explosion[MAX_EXPLOSIONS];
+static Turret turret[TURRETS_AMOUNT];
+static Building building[BUILDINGS_AMOUNT];
 static int explosionIndex = 0;
 
 static std::string fireModes [4] {
@@ -181,8 +181,10 @@ static std::string fireModes [4] {
     "AIRBURST"                      // anti-aircraft explosive projectile
 }; 
 
+static int cooldowns [4];
+
 //-----------------------------S-------------------------------------------------------------
-// Textures Declaration
+// Resources Declaration
 //------------------------------------------------------------------------------------------
 
 Textures bg;
@@ -191,14 +193,16 @@ Textures grass;
 Textures turretTop [2];
 Textures turretBottom [2];
 
-Texture2D Tbg;
-Texture2D TbgBottom;
-Texture2D Tgrass;
-Texture2D Tbuilding;
-Texture2D TturretTop;
-Texture2D TturretBottom;
+Texture2D T_bg;
+Texture2D T_bgBottom;
+Texture2D T_grass;
+Texture2D T_building;
+Texture2D T_turretTop;
+Texture2D T_turretBottom;
 
 Font font;
+
+Music music;
 
 //------------------------------------------------------------------------------------------
 // Module Functions Declaration (local)
@@ -215,6 +219,7 @@ static bool CheckCollisionParticle(Particle particle);
 
 static void UpdateOutgoingFire();
 static void UpdateIncomingFire();
+static void UpdateCooldown();
 
 static void UpdateOutgoingInterceptor();
 static void UpdateOutgoingSwarmingMissiles();
@@ -223,4 +228,4 @@ static void UpdateOutgoingAirburst();
 static void UpdateShrapnel();
 
 static Rectangle RectangleScale(Rectangle rec, int xscale, int yscale);
-static void DrawSprite(Texture2D sprite, Textures textures, Vector2 pos, int angle, bool flipx, bool flipy);
+static void DrawSprite(Texture2D sprite, Textures textures, int angle, bool flipx, bool flipy);

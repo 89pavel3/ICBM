@@ -9,6 +9,8 @@ int main(void)
     //--------------------------------------------------------------------------------------
     InitWindow(screenWidth, screenHeight, "ICBM");
 
+    InitAudioDevice();
+
     InitGame();
     
     UploadGame();
@@ -31,6 +33,8 @@ int main(void)
     //--------------------------------------------------------------------------------------
     UnloadGame();         // Unload loaded data
     
+    CloseAudioDevice();
+
     CloseWindow();        // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
 
@@ -90,6 +94,9 @@ void InitGame(void)
 
     // Initialize game variables
     score = 0;
+
+    // Start music
+    PlayMusicStream(music);
 }
 
 // Update game (one frame)
@@ -97,8 +104,13 @@ void UpdateGame(void)
 {
     if (!gameOver)
     {
-        if (IsKeyPressed('P')) pause = !pause;
+        UpdateMusicStream(music);
 
+        if (IsKeyPressed('P')) {
+            pause = !pause;
+            if(pause)  PauseMusicStream(music);
+            else       ResumeMusicStream(music);
+        }
         if (!pause)
         {
             framesCounter++;
@@ -129,7 +141,7 @@ void UpdateGame(void)
 
                     if (distance < INTERCEPTOR_SPEED)
                     {
-                        // Interceptor dissapears
+                        // Interceptor disappears
                         interceptor[i].active = false;
 
                         // Explosion
@@ -174,7 +186,7 @@ void UpdateGame(void)
                         explosion[i].active = false;
                     }
 
-                    // Check collicion with turrets
+                    // Check collision with turrets
                     for (int j = 0; j < TURRETS_AMOUNT; j++){
                         if (turret[j].active){
                             if (CheckCollisionCircleRec(explosion[i].position, EXPLOSION_RADIUS * explosion[i].radiusMultiplier, Rectangle { turret[j].position.x - TURRET_WIDTH/2, turret[j].position.y -TURRET_WIDTH/2, TURRET_WIDTH, TURRET_HEIGHT })){
@@ -214,10 +226,13 @@ void UpdateGame(void)
                 if (!building[i].active) checker++;
                 if (checker == BUILDINGS_AMOUNT) gameOver = true;
             }
+            inGameTime += GetFrameTime();
         }
     }
     else
     {
+        StopMusicStream(music);
+
         if (IsKeyPressed(KEY_ENTER))
         {
             InitGame();
@@ -232,7 +247,7 @@ void DrawGame(void)
     BeginDrawing();
 
         ClearBackground(RAYWHITE);
-        DrawTextureV(Tbg, bg.origin, WHITE);
+        DrawTextureV(T_bg, bg.origin, WHITE);
 
         if (!gameOver)
         {
@@ -269,30 +284,27 @@ void DrawGame(void)
             {   
                 Vector2 mousePosition = GetMousePosition();
                 turretTop[i].angle = atan2(mousePosition.y - turretTop[i].center.y, mousePosition.x - turretTop[i].center.x) * 180 / M_PI;
-                if (turret[i].active) DrawSprite(TturretTop, turretTop[i],  turretTop[i].origin, turretTop[i].angle, 0, i);
-                if (turret[i].active) DrawTextureV(TturretBottom, turretBottom[i].origin, WHITE);
-                // if (turret[i].active) DrawRectangle(turret[i].position.x - TURRET_WIDTH/2, turret[i].position.y - TURRET_HEIGHT/2, TURRET_WIDTH, TURRET_HEIGHT, {255, 255, 255, 60});
+                if (turret[i].active) DrawSprite(T_turretTop, turretTop[i],  turretTop[i].angle, 0, i);
+                if (turret[i].active) DrawTextureV(T_turretBottom, turretBottom[i].origin, WHITE);
             }
             
             // Draw buildings
             for (int i = 0; i < BUILDINGS_AMOUNT; i++)
             {
-                Rectangle TbuildingRec { (float) (i % 5) * Tbuilding.width/5, 0, (float) Tbuilding.width/5, (float) Tbuilding.height };
-                if (building[i].active) DrawTextureRec(Tbuilding, TbuildingRec, Vector2 {building[i].position.x - BUILDING_WIDTH/2, building[i].position.y - BUILDING_HEIGHT/2}, WHITE);
-                // if (building[i].active) DrawRectangle(building[i].position.x - BUILDING_WIDTH/2, building[i].position.y - BUILDING_HEIGHT/2, BUILDING_WIDTH, BUILDING_HEIGHT, {255, 255, 255, 60});
+                Rectangle T_buildingRec { (float) (i % 5) * T_building.width/5, 0, (float) T_building.width/5, (float) T_building.height };
+                if (building[i].active) DrawTextureRec(T_building, T_buildingRec, Vector2 {building[i].position.x - BUILDING_WIDTH/2, building[i].position.y - BUILDING_HEIGHT/2}, WHITE);
             }
 
             // Draw grass
-            DrawTextureEx(Tgrass, grass.origin, 0, 1, WHITE);
+            DrawTextureEx(T_grass, grass.origin, 0, 1, WHITE);
 
             // Draw bottom of background
-            DrawTextureEx(TbgBottom, bgBottom.origin, 0, 1, WHITE);
+            DrawTextureEx(T_bgBottom, bgBottom.origin, 0, 1, WHITE);
 
             // Draw score
             DrawText(TextFormat("SCORE %4i", score), 20, 20, 40, LIGHTGRAY);
             
             // Draw fire mode frame
-            Rectangle fireModeRec {20, 80, 150, 30};
             DrawTextEx(font, TextFormat("%s", fireModes[fireMode].c_str()), Vector2{20, 80}, 25, 1, BLACK);
             
             // Time and Fps
@@ -305,8 +317,6 @@ void DrawGame(void)
         else DrawText("PRESS [ENTER] TO PLAY AGAIN", GetScreenWidth()/2 - MeasureText("PRESS [ENTER] TO PLAY AGAIN", 20)/2, GetScreenHeight()/2 - 50, 20, WHITE);
 
     EndDrawing();
-
-    inGameTime = inGameTime + GetFrameTime();
 }
 
 
@@ -315,6 +325,7 @@ void DrawGame(void)
 //------------------------------------------------------------------------------------------
 static void UpdateOutgoingFire()
 {
+    UpdateCooldown();
     switch (fireMode)
     {
         case INTERCEPTOR:   
@@ -366,6 +377,9 @@ static void UpdateIncomingFire()
     }
 }
 
+static void UpdateCooldown(){
+
+}
 
 //------------------------------------------------------------------------------------------
 // Additional fire modules for diff types
@@ -388,7 +402,7 @@ static void UpdateOutgoingInterceptor()
         interceptor[interceptorNumber].active = true;
 
         // Assign start position
-        interceptor[interceptorNumber].origin = (Vector2){ turret[turretShooting].position.x, turret[turretShooting].position.y - TURRET_HEIGHT/2 + TturretTop.height/2};
+        interceptor[interceptorNumber].origin = (Vector2){ turret[turretShooting].position.x, turret[turretShooting].position.y - TURRET_HEIGHT/2 + T_turretTop.height/2};
         interceptor[interceptorNumber].position = interceptor[interceptorNumber].origin;
         interceptor[interceptorNumber].objective = GetMousePosition();
 
@@ -431,16 +445,16 @@ static void UpdateShrapnel()
 // Additional modules
 //------------------------------------------------------------------------------------------
 
-// Flip rectangle horizontaly or verticaly
+// Flip rectangle horizontally or vertically
 Rectangle RectangleScale(Rectangle rec, int xscale, int yscale)
 { 
     return (Rectangle){rec.x, rec.y, rec.width * xscale, rec.height * yscale};
 }
 
 // Draw flipped (or not) texture
-void DrawSprite(Texture2D sprite, Textures textures, Vector2 pos, int angle, bool flipx, bool flipy) 
+void DrawSprite(Texture2D sprite, Textures textures, int angle, bool flipx, bool flipy)
 {
-    Rectangle flippedRectangle = RectangleScale({ 0, 0, (float)sprite.width, (float)sprite.height }, flipx==true?-1:1, flipy==true?-1:1);
+    Rectangle flippedRectangle = RectangleScale({ 0, 0, (float)sprite.width, (float)sprite.height }, flipx?-1:1, flipy?-1:1);
     DrawTexturePro(sprite, flippedRectangle, Rectangle { textures.center.x, textures.center.y, (float)sprite.width, (float) sprite.height }, Vector2{ (float)sprite.width/2, (float)sprite.height/2}, angle, WHITE);                
 }
 
@@ -448,7 +462,7 @@ void DrawSprite(Texture2D sprite, Textures textures, Vector2 pos, int angle, boo
 bool CheckCollisionParticle(Particle particle){
     // Collision and particle out of bounds
     if (particle.position.y > groundPositionScale * screenHeight) {
-        // particle dissapears
+        // particle disappears
         particle.active = false;
 
         // Explosion appears
@@ -470,7 +484,7 @@ bool CheckCollisionParticle(Particle particle){
                 if (CheckCollisionPointRec(particle.position,  (Rectangle){ turret[j].position.x - TURRET_WIDTH/2, turret[j].position.y - TURRET_HEIGHT/2,
                                                                             TURRET_WIDTH, TURRET_HEIGHT }))
                 {
-                    // particle dissapears
+                    // particle disappears
                     particle.active = false;
 
                     // Explosion and destroy building
@@ -497,7 +511,7 @@ bool CheckCollisionParticle(Particle particle){
             {
                 if (CheckCollisionPointRec(particle.position,  (Rectangle){ building[j].position.x - BUILDING_WIDTH/2, building[j].position.y - BUILDING_HEIGHT/2, BUILDING_WIDTH, BUILDING_HEIGHT }))
                 {
-                    // particle dissapears
+                    // particle disappears
                     particle.active = false;
 
                     // Explosion and destroy building
@@ -523,7 +537,7 @@ bool CheckCollisionParticle(Particle particle){
             {
                 if (CheckCollisionPointCircle(particle.position, explosion[j].position, EXPLOSION_RADIUS*explosion[j].radiusMultiplier))
                 {
-                    // particle dissapears and we earn 1 points
+                    // particle disappears and we earn 1 points
                     particle.active = false;
                     score += 1;
                     if (particle.explosive)
@@ -554,39 +568,39 @@ void UploadGame(void){
     SetWindowIcon(icon);
     
     // Upload background
-    Tbg = LoadTexture("../resources/bg.png");
+    T_bg = LoadTexture("../resources/bg.png");
     bg.origin = Vector2 { 0, 0 };
-    bg.center = Vector2 { Tbg.width/2 + bg.origin.x, Tbg.height/2 + bg.origin.y };
+    bg.center = Vector2 { T_bg.width/2 + bg.origin.x, T_bg.height/2 + bg.origin.y };
 
-    TbgBottom = LoadTexture("../resources/bg_bottom.png");
+    T_bgBottom = LoadTexture("../resources/bg_bottom.png");
     bgBottom.origin = Vector2 { 0, screenHeight * groundPositionScale };
-    bgBottom.center = Vector2 { TbgBottom.width/2 + bgBottom.origin.x, TbgBottom.height/2 + bgBottom.origin.y };
+    bgBottom.center = Vector2 { T_bgBottom.width/2 + bgBottom.origin.x, T_bgBottom.height/2 + bgBottom.origin.y };
 
     // Upload grass
-    Tgrass = LoadTexture("../resources/grass_blue.png");
-    grass.origin = Vector2 { 0, screenHeight * groundPositionScale - Tgrass.height };
-    grass.center = Vector2 { Tgrass.width/2 + grass.origin.x, Tgrass.height/2 + grass.origin.y };
+    T_grass = LoadTexture("../resources/grass_blue.png");
+    grass.origin = Vector2 { 0, screenHeight * groundPositionScale - T_grass.height };
+    grass.center = Vector2 { T_grass.width/2 + grass.origin.x, T_grass.height/2 + grass.origin.y };
 
     // Upload building textures
-    Tbuilding = LoadTexture("../resources/homes.png");
+    T_building = LoadTexture("../resources/homes.png");
 
     // Upload turret textures
-    TturretTop = LoadTexture("../resources/turretTop.png");
+    T_turretTop = LoadTexture("../resources/turretTop.png");
     
     for (int i = 0; i < 2; i++){
-        turretTop[i].origin = Vector2 { turret[i].position.x - TturretTop.width/2, turret[i].position.y - TURRET_HEIGHT/2 };
-        turretTop[i].center = Vector2 { TturretTop.width/2 + turretTop[i].origin.x, TturretTop.height/2 + turretTop[0].origin.y };
+        turretTop[i].origin = Vector2 { turret[i].position.x - T_turretTop.width/2, turret[i].position.y - TURRET_HEIGHT/2 };
+        turretTop[i].center = Vector2 { T_turretTop.width/2 + turretTop[i].origin.x, T_turretTop.height/2 + turretTop[0].origin.y };
     }
 
-    TturretBottom = LoadTexture("../resources/turretBottom.png");
+    T_turretBottom = LoadTexture("../resources/turretBottom.png");
     
     for (int i = 0; i < 2; i++){
-        turretBottom[i].origin = Vector2 { turret[i].position.x - TURRET_WIDTH/2, turret[i].position.y + TURRET_HEIGHT/2 - TturretBottom.height };
-        turretBottom[i].center = Vector2 { TturretBottom.width/2 + turretBottom[i].origin.x, TturretBottom.height/2 + turretBottom[0].origin.y };
+        turretBottom[i].origin = Vector2 { turret[i].position.x - TURRET_WIDTH/2, turret[i].position.y + TURRET_HEIGHT/2 - T_turretBottom.height };
+        turretBottom[i].center = Vector2 { T_turretBottom.width/2 + turretBottom[i].origin.x, T_turretBottom.height/2 + turretBottom[0].origin.y };
     }
 
     // Upload music
-
+    Music music = LoadMusicStream("../resources/music.mp3");
 
 }
 
@@ -594,9 +608,11 @@ void UploadGame(void){
 void UnloadGame(void)
 {
     // UnloadImage();
-    UnloadTexture(Tbg);
-    UnloadTexture(TbgBottom);
-    UnloadTexture(TturretTop);
-    UnloadTexture(TturretBottom);
-    UnloadTexture(Tbuilding);    
+    UnloadTexture(T_bg);
+    UnloadTexture(T_bgBottom);
+    UnloadTexture(T_turretTop);
+    UnloadTexture(T_turretBottom);
+    UnloadTexture(T_building);
+
+    UnloadMusicStream(music);
 }
