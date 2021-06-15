@@ -8,7 +8,7 @@ First, install `cmake` and `conan`.
 
 Second, clone the repository.
 
-Third, if you use `Windows`(doesn't work right now) or `Linux` just run `ICBM.cmd` file. 
+Third, run `ICBM.cmd` file. 
 
 It run next script on `Linux`:
 ```
