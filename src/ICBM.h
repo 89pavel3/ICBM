@@ -181,7 +181,8 @@ static std::string fireModes [4] {
     "AIRBURST"                      // anti-aircraft explosive projectile
 }; 
 
-static int cooldowns [4];
+static float cooldowns [8];
+static const float cooldownsOriginal [8] = { 60, 300, 120, 120 };
 
 //-----------------------------S-------------------------------------------------------------
 // Resources Declaration
@@ -215,7 +216,8 @@ static void UnloadGame(void);       // Unload game
 
 
 // Additional module functions
-static bool CheckCollisionParticle(Particle particle);
+bool CheckCollisionParticle(Particle particle, bool withObjective, bool withExplosion, bool withTurret, bool withBuilding);
+static void UpdateExplosions();
 
 static void UpdateOutgoingFire();
 static void UpdateIncomingFire();
@@ -226,6 +228,8 @@ static void UpdateOutgoingSwarmingMissiles();
 static void UpdateOutgoingLaserBeam();
 static void UpdateOutgoingAirburst();
 static void UpdateShrapnel();
+
+static void DrawCooldownBox();
 
 static Rectangle RectangleScale(Rectangle rec, int xscale, int yscale);
 static void DrawSprite(Texture2D sprite, Textures textures, int angle, bool flipx, bool flipy);

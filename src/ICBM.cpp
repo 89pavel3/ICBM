@@ -115,8 +115,6 @@ void UpdateGame(void)
         {
             framesCounter++;
 
-            static float distance;
-
             // Update fire mode
             float mouseWheel = GetMouseWheelMove(); 
             if(mouseWheel > 0){
@@ -135,24 +133,7 @@ void UpdateGame(void)
                     interceptor[i].position.x += interceptor[i].speed.x;
                     interceptor[i].position.y += interceptor[i].speed.y;
 
-                    // Distance to objective
-                    distance = hypot(interceptor[i].position.x - interceptor[i].objective.x,
-                                     interceptor[i].position.y - interceptor[i].objective.y);
-
-                    if (distance < INTERCEPTOR_SPEED)
-                    {
-                        // Interceptor disappears
-                        interceptor[i].active = false;
-
-                        // Explosion
-                        explosion[explosionIndex].position = interceptor[i].position;
-                        explosion[explosionIndex].active = true;
-                        explosion[explosionIndex].frame = 0;
-                        explosionIndex++;
-                        if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
-
-                        break;
-                    }
+                    interceptor[i].active = CheckCollisionParticle(interceptor[i], true, false, false, false);
                 }
             }
 
@@ -165,49 +146,17 @@ void UpdateGame(void)
                     missile[i].position.x += missile[i].speed.x;
                     missile[i].position.y += missile[i].speed.y;
                     
-                    missile[i].active = CheckCollisionParticle(Particle {missile[i].origin, missile[i].position, missile[i].objective, missile[i].speed, missile[i].explosive, missile[i].active});
+                    missile[i].active = CheckCollisionParticle(missile[i], true, true, true, true);
                     
                 }
                 
             }
 
             // Explosions update
-            for (int i = 0; i < MAX_EXPLOSIONS; i++)
-            {
-                if (explosion[i].active)
-                {
-                    explosion[i].frame++;
-
-                    if (explosion[i].frame <= EXPLOSION_INCREASE_TIME) explosion[i].radiusMultiplier = explosion[i].frame/(float)EXPLOSION_INCREASE_TIME;
-                    else if (explosion[i].frame <= EXPLOSION_TOTAL_TIME) explosion[i].radiusMultiplier = 1 - (explosion[i].frame - (float)EXPLOSION_INCREASE_TIME)/(float)EXPLOSION_TOTAL_TIME;
-                    else
-                    {
-                        explosion[i].frame = 0;
-                        explosion[i].active = false;
-                    }
-
-                    // Check collision with turrets
-                    for (int j = 0; j < TURRETS_AMOUNT; j++){
-                        if (turret[j].active){
-                            if (CheckCollisionCircleRec(explosion[i].position, EXPLOSION_RADIUS * explosion[i].radiusMultiplier, Rectangle { turret[j].position.x - TURRET_WIDTH/2, turret[j].position.y -TURRET_WIDTH/2, TURRET_WIDTH, TURRET_HEIGHT })){
-                                turret[j].active = false;
-                            }
-                        }
-                    }
-
-                    // Check collision with buildings
-                    for (int j = 0; j < BUILDINGS_AMOUNT; j++){
-                        if (building[j].active){
-                            if (CheckCollisionCircleRec(explosion[i].position, EXPLOSION_RADIUS * explosion[i].radiusMultiplier, Rectangle { building[j].position.x - BUILDING_WIDTH/2, building[j].position.y - BUILDING_HEIGHT/2, BUILDING_WIDTH, BUILDING_HEIGHT })){
-                                building[j].active = false;
-                            }
-                        }
-                    }
-                }
-            }
-
+            UpdateExplosions();
 
             // Fire logic
+            UpdateCooldown();            
             UpdateOutgoingFire();
             UpdateIncomingFire();
 
@@ -299,7 +248,10 @@ void DrawGame(void)
             DrawTextureEx(T_grass, grass.origin, 0, 1, WHITE);
 
             // Draw bottom of background
-            DrawTextureEx(T_bgBottom, bgBottom.origin, 0, 1, WHITE);
+            DrawTextureRec(T_bg, Rectangle { 0, screenHeight*groundPositionScale, (float) screenWidth, screenHeight*(1-groundPositionScale) }, bgBottom.origin, WHITE);
+
+            // Draw cooldown box
+            DrawCooldownBox();
 
             // Draw score
             DrawText(TextFormat("SCORE %4i", score), 20, 20, 40, LIGHTGRAY);
@@ -319,13 +271,130 @@ void DrawGame(void)
     EndDrawing();
 }
 
-
 //------------------------------------------------------------------------------------------
 // Module for fire logic
 //------------------------------------------------------------------------------------------
+
+// Check collision particle with buildings, turrets and explosions
+bool CheckCollisionParticle(Particle particle, bool withObjective, bool withExplosion, bool withTurret, bool withBuilding){
+    // Collision and particle out of bounds
+    if (particle.position.y > groundPositionScale * screenHeight) {
+        // particle disappears
+        particle.active = false;
+
+        // Explosion appears
+        if (particle.explosive){
+            explosion[explosionIndex].position = particle.position;
+            explosion[explosionIndex].active = true;
+            explosion[explosionIndex].frame = 0;
+            explosionIndex++;
+            if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
+        }
+    }
+    else{
+        // CHeck collision with turrets
+        if (withTurret)
+            for (int j = 0; j < TURRETS_AMOUNT; j++) {
+                if (turret[j].active)
+                {
+                    if (CheckCollisionPointRec(particle.position,  (Rectangle){ turret[j].position.x - TURRET_WIDTH/2, turret[j].position.y - TURRET_HEIGHT/2,
+                                                                                TURRET_WIDTH, TURRET_HEIGHT }))
+                    {
+                        // particle disappears
+                        particle.active = false;
+
+                        // Explosion and destroy building
+                        turret[j].active = false;
+
+                        if (particle.explosive)
+                        {   
+                            explosion[explosionIndex].position = particle.position;
+                            explosion[explosionIndex].active = true;
+                            explosion[explosionIndex].frame = 0;
+                            explosionIndex++;
+                            if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
+                        }
+
+                        break;
+                    }
+                }
+            }
+        
+        // CHeck collision with buildings
+        if (withBuilding)
+            for (int j = 0; j < BUILDINGS_AMOUNT; j++) {
+                if (building[j].active)
+                {
+                    if (CheckCollisionPointRec(particle.position,  (Rectangle){ building[j].position.x - BUILDING_WIDTH/2, building[j].position.y - BUILDING_HEIGHT/2, BUILDING_WIDTH, BUILDING_HEIGHT }))
+                    {
+                        // particle disappears
+                        particle.active = false;
+
+                        // Explosion and destroy building
+                        building[j].active = false;
+                        if (particle.explosive)
+                        {
+                            explosion[explosionIndex].position = particle.position;
+                            explosion[explosionIndex].active = true;
+                            explosion[explosionIndex].frame = 0;
+                            explosionIndex++;
+                            if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
+                        }
+
+                        break;
+                    }
+                }
+            }
+        
+        // CHeck collision with explosions   
+        if (withExplosion) 
+            for (int j = 0; j < MAX_EXPLOSIONS; j++) {
+                if (explosion[j].active) {
+                    if (CheckCollisionPointCircle(particle.position, explosion[j].position, EXPLOSION_RADIUS*explosion[j].radiusMultiplier))
+                    {
+                        // particle disappears and we earn 1 points
+                        particle.active = false;
+                        score += 1;
+                        if (particle.explosive)
+                        {
+                            explosion[explosionIndex].position = particle.position;
+                            explosion[explosionIndex].active = true;
+                            explosion[explosionIndex].frame = 0;
+                            explosionIndex++;
+                            if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+        // Check collision with objective
+        if (withObjective) {
+            // Distance to objective
+            float distance = hypot(particle.position.x - particle.objective.x,
+                            particle.position.y - particle.objective.y);
+
+            if (distance < hypot(particle.speed.x, particle.speed.y))
+            {
+                // Interceptor disappears
+                particle.active = false;
+
+                // Explosion
+                explosion[explosionIndex].position = particle.position;
+                explosion[explosionIndex].active = true;
+                explosion[explosionIndex].frame = 0;
+                explosionIndex++;
+                if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
+            }
+        }
+    }   
+    return particle.active;
+}
+
+// Initiate one of the fire modes
 static void UpdateOutgoingFire()
 {
-    UpdateCooldown();
     switch (fireMode)
     {
         case INTERCEPTOR:   
@@ -343,6 +412,7 @@ static void UpdateOutgoingFire()
     }
 }
 
+// Initiate some incoming missiles
 static void UpdateIncomingFire()
 {
     static int missileIndex = 0;
@@ -377,8 +447,20 @@ static void UpdateIncomingFire()
     }
 }
 
+// Update all cooldowns
 static void UpdateCooldown(){
+    for (int i = 0; i < 8; ++i)
+        if (cooldowns[i] > 0)
+            cooldowns[i] -= 1;
 
+    // for (auto i : cooldowns)
+    // {
+    //     if (cooldowns[i] != 0){
+    //         cooldowns[i] -= 1;
+    //     }
+    //     printf("%d ", cooldowns[i]);
+    // }
+    // printf("\n");
 }
 
 //------------------------------------------------------------------------------------------
@@ -392,7 +474,7 @@ static void UpdateOutgoingInterceptor()
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) turretShooting = 0;
     if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) turretShooting = 1;
 
-    if (turretShooting > -1 && turret[turretShooting].active)
+    if (turretShooting > -1 && turret[turretShooting].active && cooldowns[turretShooting * 1] == 0)
     {
         float module;
         float sideX;
@@ -416,6 +498,7 @@ static void UpdateOutgoingInterceptor()
         interceptor[interceptorNumber].speed = (Vector2){ sideX, sideY };
 
         // Update
+        cooldowns[turretShooting * 1] = INTERCEPTOR_COOLDOWN;
         interceptorNumber++;
         if (interceptorNumber == MAX_INTERCEPTORS) interceptorNumber = 0;
     }
@@ -423,27 +506,96 @@ static void UpdateOutgoingInterceptor()
 
 static void UpdateOutgoingSwarmingMissiles()
 {
-    
+    static int interceptorNumber = 0;
+    int turretShooting = -1;
+
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) turretShooting = 0;
+    if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) turretShooting = 1;
+
+    if (turretShooting > -1 && turret[turretShooting].active && cooldowns[turretShooting] == 0)
+    {
+
+        cooldowns[turretShooting * 1] = INTERCEPTOR_COOLDOWN;
+    }
 }
 
 static void UpdateOutgoingLaserBeam()
 {
+    static int interceptorNumber = 0;
+    int turretShooting = -1;
 
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) turretShooting = 0;
+    if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) turretShooting = 1;
+    
+    if (turretShooting > -1 && turret[turretShooting].active && cooldowns[turretShooting] == 0)
+    {
+        
+        cooldowns[turretShooting * 3] = INTERCEPTOR_COOLDOWN;
+    }
 }
 
 static void UpdateOutgoingAirburst()
 {
+    static int interceptorNumber = 0;
+    int turretShooting = -1;
 
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) turretShooting = 0;
+    if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) turretShooting = 1;
+
+    if (turretShooting > -1 && turret[turretShooting].active && cooldowns[turretShooting] == 0)
+    {
+
+        cooldowns[turretShooting * 4] = INTERCEPTOR_COOLDOWN;
+    }
 }
 
 static void UpdateShrapnel()
 {
-
+    
 }
+
+
 
 //------------------------------------------------------------------------------------------
 // Additional modules
 //------------------------------------------------------------------------------------------
+
+// Update explosions
+static void UpdateExplosions(){
+    for (int i = 0; i < MAX_EXPLOSIONS; i++)
+    {
+        if (explosion[i].active)
+        {
+            explosion[i].frame++;
+
+            if (explosion[i].frame <= EXPLOSION_INCREASE_TIME) explosion[i].radiusMultiplier = explosion[i].frame/(float)EXPLOSION_INCREASE_TIME;
+            else if (explosion[i].frame <= EXPLOSION_TOTAL_TIME) explosion[i].radiusMultiplier = 1 - (explosion[i].frame - (float)EXPLOSION_INCREASE_TIME)/(float)EXPLOSION_TOTAL_TIME;
+            else
+            {
+                explosion[i].frame = 0;
+                explosion[i].active = false;
+            }
+
+            // Check collision with turrets
+            for (int j = 0; j < TURRETS_AMOUNT; j++){
+                if (turret[j].active){
+                    if (CheckCollisionCircleRec(explosion[i].position, EXPLOSION_RADIUS * explosion[i].radiusMultiplier, Rectangle { turret[j].position.x - TURRET_WIDTH/2, turret[j].position.y -TURRET_WIDTH/2, TURRET_WIDTH, TURRET_HEIGHT })){
+                        turret[j].active = false;
+                    }
+                }
+            }
+
+            // Check collision with buildings
+            for (int j = 0; j < BUILDINGS_AMOUNT; j++){
+                if (building[j].active){
+                    if (CheckCollisionCircleRec(explosion[i].position, EXPLOSION_RADIUS * explosion[i].radiusMultiplier, Rectangle { building[j].position.x - BUILDING_WIDTH/2, building[j].position.y - BUILDING_HEIGHT/2, BUILDING_WIDTH, BUILDING_HEIGHT })){
+                        building[j].active = false;
+                    }
+                }
+            }
+        }
+    }
+}
 
 // Flip rectangle horizontally or vertically
 Rectangle RectangleScale(Rectangle rec, int xscale, int yscale)
@@ -458,103 +610,30 @@ void DrawSprite(Texture2D sprite, Textures textures, int angle, bool flipx, bool
     DrawTexturePro(sprite, flippedRectangle, Rectangle { textures.center.x, textures.center.y, (float)sprite.width, (float) sprite.height }, Vector2{ (float)sprite.width/2, (float)sprite.height/2}, angle, WHITE);                
 }
 
-// Check collision particle with buildings, turrets and explosions
-bool CheckCollisionParticle(Particle particle){
-    // Collision and particle out of bounds
-    if (particle.position.y > groundPositionScale * screenHeight) {
-        // particle disappears
-        particle.active = false;
+// Draw cooldown boxes
+void DrawCooldownBox(){
+    float thickness = 3;
+    float boxWidth = 20;
 
-        // Explosion appears
-        if (particle.explosive){
-            explosion[explosionIndex].position = particle.position;
-            explosion[explosionIndex].active = true;
-            explosion[explosionIndex].frame = 0;
-            explosionIndex++;
-            if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
-        }
+    Rectangle cooldownBoxLeft { 0, (float) screenHeight/3, boxWidth, (float) screenHeight/3 };
+    Rectangle cooldownBoxRight { screenWidth-boxWidth, (float) screenHeight/3, boxWidth, (float) screenHeight/3 };
+
+    DrawRectangleLinesEx(cooldownBoxLeft, thickness, BLACK);
+    DrawRectangleLinesEx(cooldownBoxRight, thickness, BLACK);
+
+    if (cooldowns[2*fireMode] > 0){
+        Rectangle cooldownBoxLeftMoving { thickness, 2*screenHeight/3+thickness-(screenHeight/3)*(cooldowns[fireMode*2]/cooldownsOriginal[fireMode]),
+                                          boxWidth-2*thickness, (screenHeight/3)*(cooldowns[fireMode*2]/cooldownsOriginal[fireMode])-2*thickness };
+        DrawRectangleGradientEx( cooldownBoxLeftMoving, BLUE, RED, RED, BLUE );
     }
-    else
-    {
-        // CHeck collision with turrets
-        for (int j = 0; j < TURRETS_AMOUNT; j++)
-        {
-            if (turret[j].active)
-            {
-                if (CheckCollisionPointRec(particle.position,  (Rectangle){ turret[j].position.x - TURRET_WIDTH/2, turret[j].position.y - TURRET_HEIGHT/2,
-                                                                            TURRET_WIDTH, TURRET_HEIGHT }))
-                {
-                    // particle disappears
-                    particle.active = false;
+    else    DrawRectangle(thickness, screenHeight/3+thickness, boxWidth-2*thickness, screenHeight/3-2*thickness, GREEN);
 
-                    // Explosion and destroy building
-                    turret[j].active = false;
-
-                    if (particle.explosive)
-                    {   
-                        explosion[explosionIndex].position = particle.position;
-                        explosion[explosionIndex].active = true;
-                        explosion[explosionIndex].frame = 0;
-                        explosionIndex++;
-                        if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
-                    }
-
-                    break;
-                }
-            }
-        }
-
-        // CHeck collision with buildings
-        for (int j = 0; j < BUILDINGS_AMOUNT; j++)
-        {
-            if (building[j].active)
-            {
-                if (CheckCollisionPointRec(particle.position,  (Rectangle){ building[j].position.x - BUILDING_WIDTH/2, building[j].position.y - BUILDING_HEIGHT/2, BUILDING_WIDTH, BUILDING_HEIGHT }))
-                {
-                    // particle disappears
-                    particle.active = false;
-
-                    // Explosion and destroy building
-                    building[j].active = false;
-                    if (particle.explosive)
-                    {
-                        explosion[explosionIndex].position = particle.position;
-                        explosion[explosionIndex].active = true;
-                        explosion[explosionIndex].frame = 0;
-                        explosionIndex++;
-                        if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
-                    }
-
-                    break;
-                }
-            }
-        }
-
-        // CHeck collision with explosions
-        for (int j = 0; j < MAX_EXPLOSIONS; j++)
-        {
-            if (explosion[j].active)
-            {
-                if (CheckCollisionPointCircle(particle.position, explosion[j].position, EXPLOSION_RADIUS*explosion[j].radiusMultiplier))
-                {
-                    // particle disappears and we earn 1 points
-                    particle.active = false;
-                    score += 1;
-                    if (particle.explosive)
-                    {
-                        explosion[explosionIndex].position = particle.position;
-                        explosion[explosionIndex].active = true;
-                        explosion[explosionIndex].frame = 0;
-                        explosionIndex++;
-                        if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
-                    }
-
-                    break;
-                }
-            }
-        }
+    if (cooldowns[2*fireMode+1] > 0){
+        Rectangle cooldownBoxRightMoving { screenWidth-boxWidth+thickness, 2*screenHeight/3+thickness-(screenHeight/3)*(cooldowns[fireMode*2+1]/cooldownsOriginal[fireMode]),
+                                           boxWidth-2*thickness, (screenHeight/3)*(cooldowns[fireMode*2+1]/cooldownsOriginal[fireMode])-2*thickness };
+        DrawRectangleGradientEx( cooldownBoxRightMoving, BLUE, RED, RED, BLUE );
     }
-    return particle.active;
+    else    DrawRectangle(screenWidth-boxWidth+thickness, screenHeight/3+thickness, boxWidth-2*thickness, screenHeight/3-2*thickness, GREEN);
 }
 
 //------------------------------------------------------------------------------------------
@@ -577,7 +656,7 @@ void UploadGame(void){
     bgBottom.center = Vector2 { T_bgBottom.width/2 + bgBottom.origin.x, T_bgBottom.height/2 + bgBottom.origin.y };
 
     // Upload grass
-    T_grass = LoadTexture("../resources/grass_blue.png");
+    T_grass = LoadTexture("../resources/grass.png");
     grass.origin = Vector2 { 0, screenHeight * groundPositionScale - T_grass.height };
     grass.center = Vector2 { T_grass.width/2 + grass.origin.x, T_grass.height/2 + grass.origin.y };
 
@@ -601,7 +680,6 @@ void UploadGame(void){
 
     // Upload music
     Music music = LoadMusicStream("../resources/music.mp3");
-
 }
 
 // Unload game variables
