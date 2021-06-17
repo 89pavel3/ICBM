@@ -13,8 +13,8 @@
 #define MAX_MISSILES                100
 #define MAX_INTERCEPTORS            30
 #define MAX_EXPLOSIONS              100
-#define TURRETS_AMOUNT              2           // Not a variable, should not be changed
-#define BUILDINGS_AMOUNT            7           // Not a variable, should not be changed
+#define TURRETS_AMOUNT              2           // Should not be changed
+#define BUILDINGS_AMOUNT            7           // Should not be changed
 
 #define TURRET_WIDTH                51
 #define TURRET_HEIGHT               80
@@ -44,16 +44,31 @@
 //------------------------------------------------------------------------------------------
 // Types and Structures Definition
 //------------------------------------------------------------------------------------------
+
+/// Particle
+/**
+ * Родительский класс для всех снарядов
+ */
 class Particle {
 public:
-    Vector2 origin;
-    Vector2 position;
-    Vector2 objective;
-    Vector2 speed;
+    Vector2 origin;    ///< Начальная позиция
+    Vector2 position;  ///< Текущая позиция
+    Vector2 objective; ///< Конечная позиция
+    Vector2 speed;     ///< Скорость 
 
-    bool explosive;
-    bool active;
+    bool explosive;    ///< Взорвется ли снаряд при колизии
+    bool active;       ///< Активность снаряда
     
+    /**
+     * @brief Construct a new Particle object
+     * 
+     * @param originP Начальная позиция
+     * @param positionP Текущая позиция
+     * @param objectiveP Конечная позиция
+     * @param speedP Скорость
+     * @param explosiveP Взорвется ли снаряд при колизии
+     * @param activeP Активность снаряда
+     */
     Particle(Vector2 originP = Vector2 {0, 0}, Vector2 positionP = Vector2 {0, 0}, Vector2 objectiveP = Vector2 {0, 0}, Vector2 speedP = Vector2 {0, 0}, bool explosiveP = 0, bool activeP =0)
     {
         this->origin = originP;
@@ -68,6 +83,11 @@ public:
     ~Particle(){}
 };
 
+/// Missile
+/*!
+ * Дочерний класс Missile (вражеские ракеты) от Particle
+ */
+/// 
 class Missile : public Particle {
 public:
     Missile()
@@ -77,6 +97,11 @@ public:
     };
 };
 
+
+/// Interceptor
+/*!
+ * Дочерний класс Interceptor (дружественные ракеты) от Particle
+ */ 
 class Interceptor : public Particle {
 public:
     Interceptor()
@@ -86,30 +111,39 @@ public:
     };
 };
 
-
+/// Laser
+/*!
+ * Нереализованный режим огня - лазер
+ */
 typedef struct Laser {
-    Vector2 origin;
-    Vector2 objective;
+    Vector2 origin;     ///< Начальная позиция
+    Vector2 objective;  ///< Точка задающая луч
 
-    int duration;
-    int frame;
+    int frame;          ///< Количество кадров, прощедших с активации лазера
 
-    bool explosive = 0;
-    bool active;
+    bool active;        ///< Работает ли лазер
 } Laser;
 
+/// Airburst
+/*!
+ * Нереализованный режим огня - разрывной снаряд, разрывается на множество осколков
+ */
 typedef struct Airburst {
-    Vector2 origin;
-    Vector2 position;
-    Vector2 objective;
-    Vector2 speed;
+    Vector2 origin;     ///< Начальная позиция
+    Vector2 position;   ///< Текущая позиция
+    Vector2 objective;  ///< Конечная позиция
+    Vector2 speed;      ///< Скорость
 
-    int numberOfShrapnel = 10;
+    int numberOfShrapnel = 10;  ///< Количество осколков
 
-    bool explosive = 0;
-    bool active;
+    bool explosive = 0; ///< Взорвется ли снаряд при колизии
+    bool active;        ///< Активность снаряда
 } Airburst;
 
+/// Shrapnel
+/*!
+ * Нереализованный класс нереализовванного режима ведения огня
+ */
 class Shrapnel : public Particle {
 public:
     Shrapnel()
@@ -118,24 +152,45 @@ public:
     };
 };
 
-
+/// Explosion
+/*!
+ * Струтктура описывающая взрыв
+ */
 typedef struct Explosion {
-    Vector2 position;
-    float radiusMultiplier;
-    int frame;
-    bool active;
+    Vector2 position;           ///< Позиция вызыва
+    float radiusMultiplier;     ///< Параметр задающий радиус ??? РУУУУУУУУУУУУУУУУУУРУУУУУУУУУУУУУУУУУУ
+    int frame;                  ///< Количество кадров, прощедших с активации взрыва
+    bool active;                ///< Активность взрыва
 } Explosion;
 
+/// Turret
+/*!
+ * Струтктура описывающая турели
+ */
 typedef struct Turret {
-    Vector2 position;
-    Vector2 objective;
-    bool active;
+    Vector2 position;       ///< Позиция турели
+    Vector2 objective;      ///< Позиция, по которой турель ведёт огонь
+    bool active;            ///< Жива ли турель
 } Turret;
 
+/// Building
+/*!
+ * Струтктура описывающая мирные здания
+ */
 typedef struct Building {
-    Vector2 position;
-    bool active;
-} Building;
+    Vector2 position;       ///< Позиция здания
+    bool active;            ///< Живо ли здание
+} Building; 
+
+/// Textures
+/*!
+ * Струтктура описывающая текстуры (просто для удобства)
+ */
+typedef struct Textures{
+    Vector2 center;         ///< Центр текстуры
+    Vector2 origin;         ///< Позиция текстуры на экране
+    int angle;              ///< Угол поворота текстуры
+} Textures;
 
 enum FireModes 
 {
@@ -145,35 +200,30 @@ enum FireModes
     AIRBURST                    // missile explode with shrapnel
 } FireModes;
 
-typedef struct Textures{
-    Vector2 center;
-    Vector2 origin;
-    int angle;
-} Textures;
-
 //------------------------------------------------------------------------------------------
 // Global Variables Declaration
 //------------------------------------------------------------------------------------------
 
-static int screenWidth = 1080;
-static int screenHeight = 720;
+static int screenWidth = 1080;      ///< Screen width in pixels
+static int screenHeight = 720;      ///< Screen height in pixels
 
-static float inGameTime;
-static float groundPositionScale = 0.91;
+static float inGameTime;            ///< Time since the start of the game
+static float groundPositionScale = 0.91;    ///< Height of the ground above the bottom of the screen in ratio
 
-static int framesCounter = 0;
-static bool gameOver = false;
-static bool pause = false;
-static int score = 0;
-static int fireMode;
+static int framesCounter = 0;       ///< Number of frames since start of the game
+static bool gameOver = false;       ///< Game over value
+static bool pause = false;          ///< Game pause value
+static int score = 0;               ///< Game score value
+static int fireMode;                ///< Current fire mode
 
-static Missile missile[MAX_MISSILES];
-static Interceptor interceptor[MAX_INTERCEPTORS];
-static Explosion explosion[MAX_EXPLOSIONS];
-static Turret turret[TURRETS_AMOUNT];
-static Building building[BUILDINGS_AMOUNT];
+static Missile missile[MAX_MISSILES];               ///< Array with all missiles
+static Interceptor interceptor[MAX_INTERCEPTORS];   ///< Array with all interceptors
+static Explosion explosion[MAX_EXPLOSIONS];         ///< Array with all explosions
+static Turret turret[TURRETS_AMOUNT];               ///< Array with all turrets
+static Building building[BUILDINGS_AMOUNT];         ///< Array with all buildings
 static int explosionIndex = 0;
 
+/// Array with names of fire modes
 static std::string fireModes [4] {
     "INTERCEPTOR",                  // single missile
     "SWARM",                        // cascade of missiles
@@ -181,7 +231,9 @@ static std::string fireModes [4] {
     "AIRBURST"                      // anti-aircraft explosive projectile
 }; 
 
+/// Array of all cooldowns
 static float cooldowns [8];
+/// Array with cooldowns of fire modes
 static const float cooldownsOriginal [8] = { 60, 300, 120, 120 };
 
 //-----------------------------S-------------------------------------------------------------
@@ -189,13 +241,11 @@ static const float cooldownsOriginal [8] = { 60, 300, 120, 120 };
 //------------------------------------------------------------------------------------------
 
 Textures bg;
-Textures bgBottom;
 Textures grass;
 Textures turretTop [2];
 Textures turretBottom [2];
 
 Texture2D T_bg;
-Texture2D T_bgBottom;
 Texture2D T_grass;
 Texture2D T_building;
 Texture2D T_turretTop;
@@ -208,28 +258,108 @@ Music music;
 //------------------------------------------------------------------------------------------
 // Module Functions Declaration (local)
 //------------------------------------------------------------------------------------------
-static void InitGame(void);         // Initialize game
-static void UpdateGame(void);       // Update game (one frame)
-static void DrawGame(void);         // Draw game (one frame)
-static void UploadGame(void);        // Upload game (images, textures, audio)
-static void UnloadGame(void);       // Unload game
+/**
+ * @brief Initialize new game
+ */
+static void InitGame(void);
+
+/**
+ * @brief Main function, which update all game logic (one frame)
+ */
+static void UpdateGame(void);
+
+/**
+ * @brief Draw all elements (one frame)
+ */
+static void DrawGame(void);
+
+/**
+ * @brief Upload all content: textures, music
+ */
+static void UploadGame(void);
+
+/**
+ * @brief Unload all content
+ */
+static void UnloadGame(void);
 
 
 // Additional module functions
-bool CheckCollisionParticle(Particle particle, bool withObjective, bool withExplosion, bool withTurret, bool withBuilding);
+
+/**
+ * @brief Check collision particle with bounds, and optionaly with objective, explosions, turrets and buildings
+ * 
+ * @param particle Particle
+ * @param withBounds check collision with bounds
+ * @param withObjective check collision with objective
+ * @param withExplosions check collision with explosions
+ * @param withTurrets check collision with explosions
+ * @param withBuildings check collision with buildings
+ * 
+ * @return particle.active which says that particle still alive or already not
+ */
+bool CheckCollisionParticle(Particle particle, bool withBounds, bool withObjective, bool withExplosions, bool withTurrets, bool withBuildings);
+
+/**
+ * @brief Update all explosions
+ */
 static void UpdateExplosions();
 
-static void UpdateOutgoingFire();
-static void UpdateIncomingFire();
+/**
+ * @brief Update all interceptors position and check collision with it 
+ */
+static void UpdateInterceptors();
+
+/**
+ * @brief Update all missiles position and check collision with it 
+ */
+static void UpdateMissiles();
+
+
+/**
+ * @brief Initiate one of the fire modes
+ */
+static void CreateOutgoingFire();
+
+/**
+ * @brief Creates some missiles
+ */
+static void CreateIncomingFire();
+
+/**
+ * @brief Reduces all cooldowns to zero
+ */
 static void UpdateCooldown();
 
-static void UpdateOutgoingInterceptor();
-static void UpdateOutgoingSwarmingMissiles();
-static void UpdateOutgoingLaserBeam();
-static void UpdateOutgoingAirburst();
-static void UpdateShrapnel();
+
+static void CreateOutgoingInterceptor();
+static void CreateOutgoingSwarmingMissiles();
+static void CreateOutgoingLaserBeam();
+static void CreateOutgoingAirburst();
+static void CreateShrapnel();
 
 static void DrawCooldownBox();
 
+/**
+ * @brief Scales the rectangle along the x and y axis
+ * 
+ * @param rec Original rectangle
+ * @param xscale x-axis scale
+ * @param yscale y-axis scale
+ * 
+ * @return Scaled Rectangle
+ */
 static Rectangle RectangleScale(Rectangle rec, int xscale, int yscale);
+
+/**
+ * @brief Draw texture
+ * 
+ * @param sprite Original texture
+ * @param textures Textures type which describe sprite
+ * @param angle Angle at which the texture will be rotated
+ * @param flipx flip along x-asis
+ * @param flipy flip along y-asis
+ * 
+ * @return Draw sprite
+ */
 static void DrawSprite(Texture2D sprite, Textures textures, int angle, bool flipx, bool flipy);

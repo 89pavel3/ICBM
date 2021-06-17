@@ -3,7 +3,7 @@
 //------------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------------
-int main(void)
+int main()
 {   
     // Initialization
     //--------------------------------------------------------------------------------------
@@ -46,7 +46,7 @@ int main(void)
 //------------------------------------------------------------------------------------------
 
 // Initialize game variables
-void InitGame(void)
+void InitGame()
 {   
     inGameTime = 0;
     fireMode = 0;
@@ -100,7 +100,7 @@ void InitGame(void)
 }
 
 // Update game (one frame)
-void UpdateGame(void)
+void UpdateGame()
 {
     if (!gameOver)
     {
@@ -125,56 +125,35 @@ void UpdateGame(void)
             }
 
             // Interceptors update
-            for (int i = 0; i < MAX_INTERCEPTORS; i++)
-            {
-                if (interceptor[i].active)
-                {
-                    // Update position
-                    interceptor[i].position.x += interceptor[i].speed.x;
-                    interceptor[i].position.y += interceptor[i].speed.y;
-
-                    interceptor[i].active = CheckCollisionParticle(interceptor[i], true, false, false, false);
-                }
-            }
+            UpdateInterceptors();
 
             // Missiles update
-            for (int i = 0; i < MAX_MISSILES; i++)
-            {
-                if (missile[i].active)
-                {
-                    // Update position
-                    missile[i].position.x += missile[i].speed.x;
-                    missile[i].position.y += missile[i].speed.y;
-                    
-                    missile[i].active = CheckCollisionParticle(missile[i], true, true, true, true);
-                    
-                }
-                
-            }
+            UpdateMissiles();
 
             // Explosions update
             UpdateExplosions();
 
             // Fire logic
             UpdateCooldown();            
-            UpdateOutgoingFire();
-            UpdateIncomingFire();
+            CreateOutgoingFire();
+            CreateIncomingFire();
 
             // Game over logic
-            int checker = 0;
+            int counter = 0;
 
             for (int i = 0; i < TURRETS_AMOUNT; i++)
             {
-                if (!turret[i].active) checker++;
-                if (checker == TURRETS_AMOUNT) gameOver = true;
+                if (turret[i].active) counter;
+                if (counter == TURRETS_AMOUNT) gameOver = true;
             }
 
-            checker = 0;
+            counter = 0;
             for (int i = 0; i < BUILDINGS_AMOUNT; i++)
             {
-                if (!building[i].active) checker++;
-                if (checker == BUILDINGS_AMOUNT) gameOver = true;
+                if (!building[i].active) counter++;
+                if (counter == BUILDINGS_AMOUNT) gameOver = true;
             }
+            
             inGameTime += GetFrameTime();
         }
     }
@@ -191,7 +170,7 @@ void UpdateGame(void)
 }
     
 // Draw game (one frame)
-void DrawGame(void)
+void DrawGame()
 {
     BeginDrawing();
 
@@ -248,7 +227,7 @@ void DrawGame(void)
             DrawTextureEx(T_grass, grass.origin, 0, 1, WHITE);
 
             // Draw bottom of background
-            DrawTextureRec(T_bg, Rectangle { 0, screenHeight*groundPositionScale, (float) screenWidth, screenHeight*(1-groundPositionScale) }, bgBottom.origin, WHITE);
+            DrawTextureRec(T_bg, Rectangle { 0, screenHeight*groundPositionScale, (float) screenWidth, screenHeight*(1-groundPositionScale) }, Vector2 { 0, screenHeight*groundPositionScale }, WHITE);
 
             // Draw cooldown box
             DrawCooldownBox();
@@ -275,20 +254,118 @@ void DrawGame(void)
 // Module for fire logic
 //------------------------------------------------------------------------------------------
 
-// Check collision particle with buildings, turrets and explosions
-bool CheckCollisionParticle(Particle particle, bool withObjective, bool withExplosion, bool withTurret, bool withBuilding){
-    // Collision and particle out of bounds
-    if (particle.position.y > groundPositionScale * screenHeight) {
-        // particle disappears
-        particle.active = false;
+// Update intercceptors position and check collisions with it
+static void UpdateInterceptors() {
+    for (int i = 0; i < MAX_INTERCEPTORS; i++)
+    {
+        if (interceptor[i].active)
+        {
+            // Update position
+            interceptor[i].position.x += interceptor[i].speed.x;
+            interceptor[i].position.y += interceptor[i].speed.y;
 
-        // Explosion appears
-        if (particle.explosive){
-            explosion[explosionIndex].position = particle.position;
-            explosion[explosionIndex].active = true;
-            explosion[explosionIndex].frame = 0;
-            explosionIndex++;
-            if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
+            interceptor[i].active = CheckCollisionParticle(interceptor[i], true, true, false, false, false);
+        }
+    }
+}
+
+// Update missiles position and check collisions with it
+static void UpdateMissiles() {
+    for (int i = 0; i < MAX_MISSILES; i++)
+            {
+                if (missile[i].active)
+                {
+                    // Update position
+                    missile[i].position.x += missile[i].speed.x;
+                    missile[i].position.y += missile[i].speed.y;
+                    
+                    missile[i].active = CheckCollisionParticle(missile[i], true, true, true, true, true);
+                    
+                }
+                
+            }
+}
+
+
+// Initiate one of the fire modes
+static void CreateOutgoingFire()
+{
+    switch (fireMode)
+    {
+        case INTERCEPTOR:   
+            CreateOutgoingInterceptor();
+            break;
+        case SWARMING_MISSILES:  
+            CreateOutgoingSwarmingMissiles();
+            break;
+        case LASERGUN:
+            CreateOutgoingLaserBeam();
+            break;
+        case AIRBURST:
+            CreateOutgoingAirburst();
+            break;
+    }
+}
+
+// Initiate some incoming missiles
+static void CreateIncomingFire()
+{
+    static int missileIndex = 0;
+
+    // Launch missile
+    if (framesCounter % MISSILE_LAUNCH_FRAMES == 0)
+    {
+        float module;
+        float sideX;
+        float sideY;
+
+        // Activate the missile
+        missile[missileIndex].active = true;
+
+        // Assign start position
+        missile[missileIndex].origin = (Vector2){ (float) GetRandomValue(20, screenWidth - 20), -10 };
+        missile[missileIndex].position = missile[missileIndex].origin;
+        missile[missileIndex].objective = (Vector2){ (float)  GetRandomValue(20, screenWidth - 20), (float)  screenHeight + 10 };
+
+        // Calculate speed
+        module = hypot( missile[missileIndex].objective.x - missile[missileIndex].origin.x,
+                        missile[missileIndex].objective.y - missile[missileIndex].origin.y);
+
+        sideX = (missile[missileIndex].objective.x - missile[missileIndex].origin.x)*MISSILE_SPEED/module;
+        sideY = (missile[missileIndex].objective.y - missile[missileIndex].origin.y)*MISSILE_SPEED/module;
+
+        missile[missileIndex].speed = (Vector2){ sideX, sideY };
+
+        // Update
+        missileIndex++;
+        if (missileIndex == MAX_MISSILES) missileIndex = 0;
+    }
+}
+
+// Update all cooldowns
+static void UpdateCooldown(){
+    for (int i = 0; i < 8; ++i)
+        if (cooldowns[i] > 0)
+            cooldowns[i] -= 1;
+}
+
+
+// Check collision particle with buildings, turrets and explosions
+bool CheckCollisionParticle(Particle particle, bool withBounds, bool withObjective, bool withExplosion, bool withTurret, bool withBuilding){
+    // Collision and particle out of bounds
+    if (withBounds){
+        if (particle.position.y > groundPositionScale * screenHeight) {
+            // particle disappears
+            particle.active = false;
+
+            // Explosion appears
+            if (particle.explosive){
+                explosion[explosionIndex].position = particle.position;
+                explosion[explosionIndex].active = true;
+                explosion[explosionIndex].frame = 0;
+                explosionIndex++;
+                if (explosionIndex == MAX_EXPLOSIONS) explosionIndex = 0;
+            }
         }
     }
     else{
@@ -392,81 +469,10 @@ bool CheckCollisionParticle(Particle particle, bool withObjective, bool withExpl
     return particle.active;
 }
 
-// Initiate one of the fire modes
-static void UpdateOutgoingFire()
-{
-    switch (fireMode)
-    {
-        case INTERCEPTOR:   
-            UpdateOutgoingInterceptor();
-            break;
-        case SWARMING_MISSILES:  
-            UpdateOutgoingSwarmingMissiles();
-            break;
-        case LASERGUN:
-            UpdateOutgoingLaserBeam();
-            break;
-        case AIRBURST:
-            UpdateOutgoingAirburst();
-            break;
-    }
-}
-
-// Initiate some incoming missiles
-static void UpdateIncomingFire()
-{
-    static int missileIndex = 0;
-
-    // Launch missile
-    if (framesCounter % MISSILE_LAUNCH_FRAMES == 0)
-    {
-        float module;
-        float sideX;
-        float sideY;
-
-        // Activate the missile
-        missile[missileIndex].active = true;
-
-        // Assign start position
-        missile[missileIndex].origin = (Vector2){ (float) GetRandomValue(20, screenWidth - 20), -10 };
-        missile[missileIndex].position = missile[missileIndex].origin;
-        missile[missileIndex].objective = (Vector2){ (float)  GetRandomValue(20, screenWidth - 20), (float)  screenHeight + 10 };
-
-        // Calculate speed
-        module = hypot( missile[missileIndex].objective.x - missile[missileIndex].origin.x,
-                        missile[missileIndex].objective.y - missile[missileIndex].origin.y);
-
-        sideX = (missile[missileIndex].objective.x - missile[missileIndex].origin.x)*MISSILE_SPEED/module;
-        sideY = (missile[missileIndex].objective.y - missile[missileIndex].origin.y)*MISSILE_SPEED/module;
-
-        missile[missileIndex].speed = (Vector2){ sideX, sideY };
-
-        // Update
-        missileIndex++;
-        if (missileIndex == MAX_MISSILES) missileIndex = 0;
-    }
-}
-
-// Update all cooldowns
-static void UpdateCooldown(){
-    for (int i = 0; i < 8; ++i)
-        if (cooldowns[i] > 0)
-            cooldowns[i] -= 1;
-
-    // for (auto i : cooldowns)
-    // {
-    //     if (cooldowns[i] != 0){
-    //         cooldowns[i] -= 1;
-    //     }
-    //     printf("%d ", cooldowns[i]);
-    // }
-    // printf("\n");
-}
-
 //------------------------------------------------------------------------------------------
 // Additional fire modules for diff types
 //------------------------------------------------------------------------------------------
-static void UpdateOutgoingInterceptor()
+static void CreateOutgoingInterceptor()
 {
     static int interceptorNumber = 0;
     int turretShooting = -1;
@@ -504,7 +510,7 @@ static void UpdateOutgoingInterceptor()
     }
 }
 
-static void UpdateOutgoingSwarmingMissiles()
+static void CreateOutgoingSwarmingMissiles()
 {
     static int interceptorNumber = 0;
     int turretShooting = -1;
@@ -519,7 +525,7 @@ static void UpdateOutgoingSwarmingMissiles()
     }
 }
 
-static void UpdateOutgoingLaserBeam()
+static void CreateOutgoingLaserBeam()
 {
     static int interceptorNumber = 0;
     int turretShooting = -1;
@@ -534,7 +540,7 @@ static void UpdateOutgoingLaserBeam()
     }
 }
 
-static void UpdateOutgoingAirburst()
+static void CreateOutgoingAirburst()
 {
     static int interceptorNumber = 0;
     int turretShooting = -1;
@@ -549,12 +555,10 @@ static void UpdateOutgoingAirburst()
     }
 }
 
-static void UpdateShrapnel()
+static void CreateShrapnel()
 {
     
 }
-
-
 
 //------------------------------------------------------------------------------------------
 // Additional modules
@@ -651,10 +655,6 @@ void UploadGame(void){
     bg.origin = Vector2 { 0, 0 };
     bg.center = Vector2 { T_bg.width/2 + bg.origin.x, T_bg.height/2 + bg.origin.y };
 
-    T_bgBottom = LoadTexture("../resources/bg_bottom.png");
-    bgBottom.origin = Vector2 { 0, screenHeight * groundPositionScale };
-    bgBottom.center = Vector2 { T_bgBottom.width/2 + bgBottom.origin.x, T_bgBottom.height/2 + bgBottom.origin.y };
-
     // Upload grass
     T_grass = LoadTexture("../resources/grass.png");
     grass.origin = Vector2 { 0, screenHeight * groundPositionScale - T_grass.height };
@@ -687,10 +687,10 @@ void UnloadGame(void)
 {
     // UnloadImage();
     UnloadTexture(T_bg);
-    UnloadTexture(T_bgBottom);
     UnloadTexture(T_turretTop);
     UnloadTexture(T_turretBottom);
     UnloadTexture(T_building);
 
+    // Unload music
     UnloadMusicStream(music);
 }

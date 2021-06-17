@@ -1,5 +1,6 @@
 [requires]
 raylib/3.5.0
+doxygen/1.9.1
 
 [generators]
 cmake

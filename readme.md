@@ -10,11 +10,10 @@ Second, clone the repository.
 
 Third, run `ICBM.cmd` file. 
 
-It run next script on `Linux`:
+It run next bash script:
 ```
 mkdir build
 cd build
-conan install ..
 cmake ..
 cmake --build .
 ./bin/ICBM
@@ -22,7 +21,7 @@ cmake --build .
 
 Documentation
 ----------
-Game docs - there is no documentation. Tests too.
+[Game docs](/build/html/index.html) - /build/html/index.html (doxygen documentation).
 
 raylib: [raylib-cpp](https://github.com/RobLoach/raylib-cpp) - [raylib official site](https://www.raylib.com/index.html).
 
