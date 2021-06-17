@@ -2,7 +2,7 @@
 #include <doctest.h>
 
 TEST_CASE("Window ready"){
-    for(int i = 1; i < 100; i++){
+    for(int i = 1; i < 10; i++){
         screenHeight = rand() % 480 + 600;
         screenWidth = rand() % 600 + 120;
         
@@ -10,7 +10,6 @@ TEST_CASE("Window ready"){
         REQUIRE(IsWindowReady() == true);
         CloseWindow();
     }
-    REQUIRE(IsWindowReady == false);
 }
 
 TEST_CASE("Unreal collision with Particle") {
@@ -28,8 +27,8 @@ TEST_CASE("Rectangle FLIP"){
         int y = rand() % screenHeight;
         int width = rand() % screenWidth - screenWidth;
         int height = rand() % screenHeight - screenHeight;
-        int flipx = rand() % 3 - 1;
-        int flipy = rand() % 3 - 1;
+        int flipx = rand() % 2 * 2 - 1;
+        int flipy = rand() % 2 * 2 - 1;
 
         Rectangle rectangle = {x, y, width, height};
         Rectangle scaledRectangle = RectangleScale(rectangle, flipx, flipy);

@@ -7,37 +7,39 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <vector>
 
 //----------------------------------------------------------------------------------
 // Some Consts
 //----------------------------------------------------------------------------------
-const int MAX_MISSILES = 100;
-const int MAX_INTERCEPTORS = 30;
-const int MAX_EXPLOSIONS = 100;
-const int TURRETS_AMOUNT = 2;   // Should not be changed
-const int BUILDINGS_AMOUNT = 7; // Should not be changed
+inline const int MAX_MISSILES = 100;
+inline const int MAX_INTERCEPTORS = 30;
+inline const int MAX_EXPLOSIONS = 100;
+inline const int TURRETS_AMOUNT = 2;   // Should not be changed
+inline const int BUILDINGS_AMOUNT = 7; // Should not be changed
 
-const int TURRET_WIDTH = 51;
-const int TURRET_HEIGHT = 80;
+inline const int TURRET_WIDTH = 51;
+inline const int TURRET_HEIGHT = 80;
 
-const int BUILDING_WIDTH = 63;
-const int BUILDING_HEIGHT = 90;
+inline const int BUILDING_WIDTH = 63;
+inline const int BUILDING_HEIGHT = 90;
 
-const int MISSILE_SPEED = 1;
-const int MISSILE_LAUNCH_FRAMES = 80;
-const int INTERCEPTOR_SPEED = 10;
+inline const int MISSILE_SPEED = 1;
+inline const int MISSILE_LAUNCH_FRAMES = 80;
 
-const int EXPLOSION_RADIUS = 40;
-const int EXPLOSION_INCREASE_TIME = 90; // In frames
-const int EXPLOSION_TOTAL_TIME = 210;   // In frames
-const Color EXPLOSION_COLOR =                                                        \
+inline const int INTERCEPTOR_SPEED = 10;
+
+inline const int EXPLOSION_RADIUS = 40;
+inline const int EXPLOSION_INCREASE_TIME = 90; // In frames
+inline const int EXPLOSION_TOTAL_TIME = 210;   // In frames
+inline const Color EXPLOSION_COLOR =                                                        \
     (Color) { 200, 50, 50, 125 };
 
-const int INTERCEPTOR_COOLDOWN = 60;
-const int SWARM_COOLDOWN = 300;
-const int LASERGUN_COOLDOWN = 120;
-const int AIRBURST_COOLDOWN = 120;
-const int SWARM_DURATION = 60;
+inline const int INTERCEPTOR_COOLDOWN = 60;
+inline const int SWARM_COOLDOWN = 300;
+inline const int LASERGUN_COOLDOWN = 120;
+inline const int AIRBURST_COOLDOWN = 120;
+inline const int SWARM_DURATION = 60;
 
 //------------------------------------------------------------------------------------------
 // Types and Structures Definition
@@ -204,16 +206,16 @@ inline bool pause = false;    ///< Game pause value
 inline int score = 0;         ///< Game score value
 inline int fireMode;          ///< Current fire mode
 
-inline Missile missile[MAX_MISSILES]; ///< Array with all missiles
-inline Interceptor
-    interceptor[MAX_INTERCEPTORS];          ///< Array with all interceptors
-inline Explosion explosion[MAX_EXPLOSIONS]; ///< Array with all explosions
-inline Turret turret[TURRETS_AMOUNT];       ///< Array with all turrets
-inline Building building[BUILDINGS_AMOUNT]; ///< Array with all buildings
+inline std::vector<Missile> missile(MAX_MISSILES); ///< Array with all missiles
+inline std::vector<Interceptor>
+    interceptor(MAX_INTERCEPTORS);          ///< Array with all interceptors
+inline std::vector<Explosion> explosion(MAX_EXPLOSIONS); ///< Array with all explosions
+inline std::vector<Turret> turret(TURRETS_AMOUNT);       ///< Array with all turrets
+inline std::vector<Building> building(BUILDINGS_AMOUNT); ///< Array with all buildings
 inline int explosionIndex = 0;
 
 /// Array with names of fire modes
-inline std::string fireModes[4]{
+inline std::vector<std::string> fireModes = {
     "INTERCEPTOR", // single missile
     "SWARM",       // cascade of missiles
     "LASERGUN",    // lasergun
@@ -221,11 +223,11 @@ inline std::string fireModes[4]{
 };
 
 /// Array of all cooldowns
-inline float cooldowns[8];
+inline std::vector<float> cooldowns(8);
 /// Array with cooldowns of fire modes
-inline const float cooldownsOriginal[8] = {60, 300, 120, 120};
+inline const std::vector<float> cooldownsOriginal = {60, 300, 120, 120};
 
-//-----------------------------S-------------------------------------------------------------
+//------------------------------------------------------------------------------------------
 // Resources Declaration
 //------------------------------------------------------------------------------------------
 

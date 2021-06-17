@@ -287,7 +287,7 @@ void CreateOutgoingFire() {
     }
 }
 
-// Initiate some incoming missiles
+// Initiate incoming missiles
 void CreateIncomingFire() {
     int missileIndex = 0;
 
