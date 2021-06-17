@@ -144,8 +144,8 @@ void UpdateGame() {
             int counter = 0;
 
             for (int i = 0; i < TURRETS_AMOUNT; i++) {
-                if (turret[i].active)
-                    counter;
+                if (!turret[i].active)
+                    counter++;
                 if (counter == TURRETS_AMOUNT)
                     gameOver = true;
             }
@@ -379,7 +379,7 @@ bool CheckCollisionParticle(Particle particle, bool withBounds,
                             bool withObjective, bool withExplosion,
                             bool withTurret, bool withBuilding) {
     // Collision and particle out of bounds
-    if (withBounds) {
+    if (withBounds)
         if (particle.position.y > groundPositionScale * screenHeight) {
             // particle disappears
             particle.active = false;
@@ -394,111 +394,110 @@ bool CheckCollisionParticle(Particle particle, bool withBounds,
                     explosionIndex = 0;
             }
         }
-    } else {
-        // CHeck collision with turrets
-        if (withTurret)
-            for (int j = 0; j < TURRETS_AMOUNT; j++) {
-                if (turret[j].active) {
-                    if (CheckCollisionPointRec(
-                            particle.position,
-                            (Rectangle){turret[j].position.x - TURRET_WIDTH / 2,
-                                        turret[j].position.y -
-                                            TURRET_HEIGHT / 2,
-                                        TURRET_WIDTH, TURRET_HEIGHT})) {
-                        // particle disappears
-                        particle.active = false;
+    
+    // CHeck collision with turrets
+    if (withTurret)
+        for (int j = 0; j < TURRETS_AMOUNT; j++) {
+            if (turret[j].active) {
+                if (CheckCollisionPointRec(
+                        particle.position,
+                        (Rectangle){turret[j].position.x - TURRET_WIDTH / 2,
+                                    turret[j].position.y -
+                                        TURRET_HEIGHT / 2,
+                                    TURRET_WIDTH, TURRET_HEIGHT})) {
+                    // particle disappears
+                    particle.active = false;
 
-                        // Explosion and destroy building
-                        turret[j].active = false;
+                    // Explosion and destroy building
+                    turret[j].active = false;
 
-                        if (particle.explosive) {
-                            explosion[explosionIndex].position =
-                                particle.position;
-                            explosion[explosionIndex].active = true;
-                            explosion[explosionIndex].frame = 0;
-                            explosionIndex++;
-                            if (explosionIndex == MAX_EXPLOSIONS)
-                                explosionIndex = 0;
-                        }
-
-                        break;
+                    if (particle.explosive) {
+                        explosion[explosionIndex].position =
+                            particle.position;
+                        explosion[explosionIndex].active = true;
+                        explosion[explosionIndex].frame = 0;
+                        explosionIndex++;
+                        if (explosionIndex == MAX_EXPLOSIONS)
+                            explosionIndex = 0;
                     }
+
+                    break;
                 }
             }
+        }
 
-        // CHeck collision with buildings
-        if (withBuilding)
-            for (int j = 0; j < BUILDINGS_AMOUNT; j++) {
-                if (building[j].active) {
-                    if (CheckCollisionPointRec(
-                            particle.position,
-                            (Rectangle){
-                                building[j].position.x - BUILDING_WIDTH / 2,
-                                building[j].position.y - BUILDING_HEIGHT / 2,
-                                BUILDING_WIDTH, BUILDING_HEIGHT})) {
-                        // particle disappears
-                        particle.active = false;
+    // CHeck collision with buildings
+    if (withBuilding)
+        for (int j = 0; j < BUILDINGS_AMOUNT; j++) {
+            if (building[j].active) {
+                if (CheckCollisionPointRec(
+                        particle.position,
+                        (Rectangle){
+                            building[j].position.x - BUILDING_WIDTH / 2,
+                            building[j].position.y - BUILDING_HEIGHT / 2,
+                            BUILDING_WIDTH, BUILDING_HEIGHT})) {
+                    // particle disappears
+                    particle.active = false;
 
-                        // Explosion and destroy building
-                        building[j].active = false;
-                        if (particle.explosive) {
-                            explosion[explosionIndex].position =
-                                particle.position;
-                            explosion[explosionIndex].active = true;
-                            explosion[explosionIndex].frame = 0;
-                            explosionIndex++;
-                            if (explosionIndex == MAX_EXPLOSIONS)
-                                explosionIndex = 0;
-                        }
-
-                        break;
+                    // Explosion and destroy building
+                    building[j].active = false;
+                    if (particle.explosive) {
+                        explosion[explosionIndex].position =
+                            particle.position;
+                        explosion[explosionIndex].active = true;
+                        explosion[explosionIndex].frame = 0;
+                        explosionIndex++;
+                        if (explosionIndex == MAX_EXPLOSIONS)
+                            explosionIndex = 0;
                     }
+
+                    break;
                 }
             }
+        }
 
-        // CHeck collision with explosions
-        if (withExplosion)
-            for (int j = 0; j < MAX_EXPLOSIONS; j++) {
-                if (explosion[j].active) {
-                    if (CheckCollisionPointCircle(
-                            particle.position, explosion[j].position,
-                            EXPLOSION_RADIUS * explosion[j].radiusMultiplier)) {
-                        // particle disappears and we earn 1 points
-                        particle.active = false;
-                        score += 1;
-                        if (particle.explosive) {
-                            explosion[explosionIndex].position =
-                                particle.position;
-                            explosion[explosionIndex].active = true;
-                            explosion[explosionIndex].frame = 0;
-                            explosionIndex++;
-                            if (explosionIndex == MAX_EXPLOSIONS)
-                                explosionIndex = 0;
-                        }
-
-                        break;
+    // CHeck collision with explosions
+    if (withExplosion)
+        for (int j = 0; j < MAX_EXPLOSIONS; j++) {
+            if (explosion[j].active) {
+                if (CheckCollisionPointCircle(
+                        particle.position, explosion[j].position,
+                        EXPLOSION_RADIUS * explosion[j].radiusMultiplier)) {
+                    // particle disappears and we earn 1 points
+                    particle.active = false;
+                    score += 1;
+                    if (particle.explosive) {
+                        explosion[explosionIndex].position =
+                            particle.position;
+                        explosion[explosionIndex].active = true;
+                        explosion[explosionIndex].frame = 0;
+                        explosionIndex++;
+                        if (explosionIndex == MAX_EXPLOSIONS)
+                            explosionIndex = 0;
                     }
+
+                    break;
                 }
             }
+        }
 
-        // Check collision with objective
-        if (withObjective) {
-            // Distance to objective
-            float distance = hypot(particle.position.x - particle.objective.x,
-                                   particle.position.y - particle.objective.y);
+    // Check collision with objective
+    if (withObjective) {
+        // Distance to objective
+        float distance = hypot(particle.position.x - particle.objective.x,
+                            particle.position.y - particle.objective.y);
 
-            if (distance < hypot(particle.speed.x, particle.speed.y)) {
-                // Interceptor disappears
-                particle.active = false;
+        if (distance < hypot(particle.speed.x, particle.speed.y)) {
+            // Interceptor disappears
+            particle.active = false;
 
-                // Explosion
-                explosion[explosionIndex].position = particle.position;
-                explosion[explosionIndex].active = true;
-                explosion[explosionIndex].frame = 0;
-                explosionIndex++;
-                if (explosionIndex == MAX_EXPLOSIONS)
-                    explosionIndex = 0;
-            }
+            // Explosion
+            explosion[explosionIndex].position = particle.position;
+            explosion[explosionIndex].active = true;
+            explosion[explosionIndex].frame = 0;
+            explosionIndex++;
+            if (explosionIndex == MAX_EXPLOSIONS)
+                explosionIndex = 0;
         }
     }
     return particle.active;
