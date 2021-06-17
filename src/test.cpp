@@ -4,12 +4,6 @@
 TEST_CASE("Collision_1") {
     screenHeight = rand() % 480 + 600;
     screenWidth = rand() % 720;
-
-    // InitWindow(screenWidth, screenHeight, "ICBM");
-    // InitAudioDevice();
-    // InitGame();
-    // UploadGame();
-    // SetTargetFPS(60);
     
     for (int i = 0; i < 100; i++)
     {
