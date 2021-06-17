@@ -1,4 +1,6 @@
-#include "raylib.h"
+#pragma once
+
+#include <raylib.h> 
 
 #include <cmath>
 #include <ctime>
@@ -7,39 +9,35 @@
 #include <string>
 
 //----------------------------------------------------------------------------------
-// Some Defines
+// Some Consts
 //----------------------------------------------------------------------------------
-#define MAX_MISSILES 100
-#define MAX_INTERCEPTORS 30
-#define MAX_EXPLOSIONS 100
-#define TURRETS_AMOUNT 2   // Should not be changed
-#define BUILDINGS_AMOUNT 7 // Should not be changed
+const int MAX_MISSILES = 100;
+const int MAX_INTERCEPTORS = 30;
+const int MAX_EXPLOSIONS = 100;
+const int TURRETS_AMOUNT = 2;   // Should not be changed
+const int BUILDINGS_AMOUNT = 7; // Should not be changed
 
-#define TURRET_WIDTH 51
-#define TURRET_HEIGHT 80
+const int TURRET_WIDTH = 51;
+const int TURRET_HEIGHT = 80;
 
-#define BUILDING_WIDTH 63
-#define BUILDING_HEIGHT 90
+const int BUILDING_WIDTH = 63;
+const int BUILDING_HEIGHT = 90;
 
-#define EXPLOSION_RADIUS 40
+const int MISSILE_SPEED = 1;
+const int MISSILE_LAUNCH_FRAMES = 80;
+const int INTERCEPTOR_SPEED = 10;
 
-#define MISSILE_SPEED 1
-#define MISSILE_LAUNCH_FRAMES 80
+const int EXPLOSION_RADIUS = 40;
+const int EXPLOSION_INCREASE_TIME = 90; // In frames
+const int EXPLOSION_TOTAL_TIME = 210;   // In frames
+const Color EXPLOSION_COLOR =                                                        \
+    (Color) { 200, 50, 50, 125 };
 
-#define INTERCEPTOR_SPEED 10
-
-#define EXPLOSION_INCREASE_TIME 90 // In frames
-#define EXPLOSION_TOTAL_TIME 210   // In frames
-
-#define EXPLOSION_COLOR                                                        \
-    (Color) { 200, 50, 50, 125 }
-
-#define INTERCEPTOR_COOLDOWN 60
-#define SWARM_COOLDOWN 300
-#define LASERGUN_COOLDOWN 120
-#define AIRBURST_COOLDOWN 120
-
-#define SWARM_DURATION 60
+const int INTERCEPTOR_COOLDOWN = 60;
+const int SWARM_COOLDOWN = 300;
+const int LASERGUN_COOLDOWN = 120;
+const int AIRBURST_COOLDOWN = 120;
+const int SWARM_DURATION = 60;
 
 //------------------------------------------------------------------------------------------
 // Types and Structures Definition
@@ -148,8 +146,7 @@ class Shrapnel : public Particle {
  */
 typedef struct Explosion {
     Vector2 position;       ///< Позиция вызыва
-    float radiusMultiplier; ///< Параметр задающий радиус ???
-                            ///< РУУУУУУУУУУУУУУУУУУРУУУУУУУУУУУУУУУУУУ
+    float radiusMultiplier; ///< Параметр задающий радиус
     int frame; ///< Количество кадров, прощедших с активации взрыва
     bool active; ///< Активность взрыва
 } Explosion;
@@ -159,9 +156,9 @@ typedef struct Explosion {
  * Струтктура описывающая турели
  */
 typedef struct Turret {
-    Vector2 position; ///< Позиция турели
-    Vector2 objective; ///< Позиция, по которой турель ведёт огонь
-    bool active; ///< Жива ли турель
+    Vector2 position;   ///< Позиция турели
+    Vector2 objective;  ///< Позиция, по которой турель ведёт огонь
+    bool active;        ///< Жива ли турель
 } Turret;
 
 /// Building
@@ -183,7 +180,7 @@ typedef struct Textures {
     int angle;      ///< Угол поворота текстуры
 } Textures;
 
-enum FireModes {
+inline enum FireModes {
     INTERCEPTOR,       // single missile
     SWARMING_MISSILES, // cascade of missiles
     LASERGUN,          // lasergun
@@ -194,29 +191,29 @@ enum FireModes {
 // Global Variables Declaration
 //------------------------------------------------------------------------------------------
 
-static int screenWidth = 1080; ///< Screen width in pixels
-static int screenHeight = 720; ///< Screen height in pixels
+inline int screenWidth = 1080; ///< Screen width in pixels
+inline int screenHeight = 720; ///< Screen height in pixels
 
-static float inGameTime; ///< Time since the start of the game
-static float groundPositionScale =
-    0.91; ///< Height of the ground above the bottom of the screen in ratio
+inline float inGameTime; ///< Time since the start of the game
+inline float groundPositionScale =
+    static_cast<float>(0.91); ///< Height of the ground above the bottom of the screen in ratio
 
-static int framesCounter = 0; ///< Number of frames since start of the game
-static bool gameOver = false; ///< Game over value
-static bool pause = false;    ///< Game pause value
-static int score = 0;         ///< Game score value
-static int fireMode;          ///< Current fire mode
+inline int framesCounter = 0; ///< Number of frames since start of the game
+inline bool gameOver = false; ///< Game over value
+inline bool pause = false;    ///< Game pause value
+inline int score = 0;         ///< Game score value
+inline int fireMode;          ///< Current fire mode
 
-static Missile missile[MAX_MISSILES]; ///< Array with all missiles
-static Interceptor
+inline Missile missile[MAX_MISSILES]; ///< Array with all missiles
+inline Interceptor
     interceptor[MAX_INTERCEPTORS];          ///< Array with all interceptors
-static Explosion explosion[MAX_EXPLOSIONS]; ///< Array with all explosions
-static Turret turret[TURRETS_AMOUNT];       ///< Array with all turrets
-static Building building[BUILDINGS_AMOUNT]; ///< Array with all buildings
-static int explosionIndex = 0;
+inline Explosion explosion[MAX_EXPLOSIONS]; ///< Array with all explosions
+inline Turret turret[TURRETS_AMOUNT];       ///< Array with all turrets
+inline Building building[BUILDINGS_AMOUNT]; ///< Array with all buildings
+inline int explosionIndex = 0;
 
 /// Array with names of fire modes
-static std::string fireModes[4]{
+inline std::string fireModes[4]{
     "INTERCEPTOR", // single missile
     "SWARM",       // cascade of missiles
     "LASERGUN",    // lasergun
@@ -224,28 +221,28 @@ static std::string fireModes[4]{
 };
 
 /// Array of all cooldowns
-static float cooldowns[8];
+inline float cooldowns[8];
 /// Array with cooldowns of fire modes
-static const float cooldownsOriginal[8] = {60, 300, 120, 120};
+inline const float cooldownsOriginal[8] = {60, 300, 120, 120};
 
 //-----------------------------S-------------------------------------------------------------
 // Resources Declaration
 //------------------------------------------------------------------------------------------
 
-Textures bg;
-Textures grass;
-Textures turretTop[2];
-Textures turretBottom[2];
+inline Textures bg;
+inline Textures grass;
+inline Textures turretTop[2];
+inline Textures turretBottom[2];
+ 
+inline Texture2D T_bg;
+inline Texture2D T_grass;
+inline Texture2D T_building;
+inline Texture2D T_turretTop;
+inline Texture2D T_turretBottom;
 
-Texture2D T_bg;
-Texture2D T_grass;
-Texture2D T_building;
-Texture2D T_turretTop;
-Texture2D T_turretBottom;
+inline  Font font;
 
-Font font;
-
-Music music;
+inline Music music;
 
 //------------------------------------------------------------------------------------------
 // Module Functions Declaration (local)
@@ -253,27 +250,27 @@ Music music;
 /**
  * @brief Initialize new game
  */
-static void InitGame(void);
+void InitGame(void);
 
 /**
  * @brief Main function, which update all game logic (one frame)
  */
-static void UpdateGame(void);
+void UpdateGame(void);
 
 /**
  * @brief Draw all elements (one frame)
  */
-static void DrawGame(void);
+void DrawGame(void);
 
 /**
  * @brief Upload all content: textures, music
  */
-static void UploadGame(void);
+void UploadGame(void);
 
 /**
  * @brief Unload all content
  */
-static void UnloadGame(void);
+void UnloadGame(void);
 
 // Additional module functions
 
@@ -297,40 +294,39 @@ bool CheckCollisionParticle(Particle particle, bool withBounds,
 /**
  * @brief Update all explosions
  */
-static void UpdateExplosions();
+void UpdateExplosions();
 
 /**
  * @brief Update all interceptors position and check collision with it
  */
-static void UpdateInterceptors();
+void UpdateInterceptors();
 
 /**
  * @brief Update all missiles position and check collision with it
  */
-static void UpdateMissiles();
+void UpdateMissiles();
 
 /**
  * @brief Initiate one of the fire modes
  */
-static void CreateOutgoingFire();
+void CreateOutgoingFire();
 
 /**
  * @brief Creates some missiles
  */
-static void CreateIncomingFire();
+void CreateIncomingFire();
 
 /**
  * @brief Reduces all cooldowns to zero
  */
-static void UpdateCooldown();
+void UpdateCooldown();
 
-static void CreateOutgoingInterceptor();
-static void CreateOutgoingSwarmingMissiles();
-static void CreateOutgoingLaserBeam();
-static void CreateOutgoingAirburst();
-static void CreateShrapnel();
-
-static void DrawCooldownBox();
+void CreateOutgoingInterceptor();
+void CreateOutgoingSwarmingMissiles();
+void CreateOutgoingLaserBeam();
+void CreateOutgoingAirburst();
+void CreateShrapnel();
+void DrawCooldownBox();
 
 /**
  * @brief Scales the rectangle along the x and y axis
@@ -341,7 +337,7 @@ static void DrawCooldownBox();
  *
  * @return Scaled Rectangle
  */
-static Rectangle RectangleScale(Rectangle rec, int xscale, int yscale);
+Rectangle RectangleScale(Rectangle rec, int xscale, int yscale);
 
 /**
  * @brief Draw texture
@@ -354,5 +350,5 @@ static Rectangle RectangleScale(Rectangle rec, int xscale, int yscale);
  *
  * @return Draw sprite
  */
-static void DrawSprite(Texture2D sprite, Textures textures, int angle,
+void DrawSprite(Texture2D sprite, Textures textures, int angle,
                        bool flipx, bool flipy);
